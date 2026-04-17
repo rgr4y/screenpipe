@@ -6,6 +6,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { StreamTimeSeriesResponse } from "@/components/rewind/timeline";
 import posthog from "posthog-js";
 import { getApiBaseUrl } from "@/lib/api";
+import { useOverlayMeasurement } from "@/lib/hooks/use-overlay-measurement";
 
 // Debounce delay for frame loading (ms) — reduced for arrow keys
 const FRAME_LOAD_DEBOUNCE_MS = 80;
@@ -58,12 +59,6 @@ export function useFrameLoading(opts: {
 	const [naturalDimensions, setNaturalDimensions] = useState<{
 		width: number;
 		height: number;
-	} | null>(null);
-	const [renderedImageInfo, setRenderedImageInfo] = useState<{
-		width: number;
-		height: number;
-		offsetX: number;
-		offsetY: number;
 	} | null>(null);
 	// Whether to use <video> seeking or fall back to <img> via ffmpeg
 	// Try video mode first on all platforms; onError fallback handles unsupported codecs
@@ -461,46 +456,10 @@ export function useFrameLoading(opts: {
 		};
 	}, [adjacentFrames, debouncedFrame?.filePath, getVideoUrl]);
 
-	// Update rendered dimensions on resize (needed for TextOverlay positioning)
-	// Debounce via rAF to avoid stale intermediate values from rapid
-	// ResizeObserver callbacks during layout stabilization
-	useEffect(() => {
-		let rafId: number | null = null;
-		const updateDimensions = () => {
-			if (rafId !== null) cancelAnimationFrame(rafId);
-			rafId = requestAnimationFrame(() => {
-				rafId = null;
-				if (containerRef.current && naturalDimensions) {
-					const containerRect = containerRef.current.getBoundingClientRect();
-					const containerAspect = containerRect.width / containerRect.height;
-					const imageAspect = naturalDimensions.width / naturalDimensions.height;
-					let renderedWidth: number, renderedHeight: number;
-					if (containerAspect > imageAspect) {
-						renderedHeight = containerRect.height;
-						renderedWidth = containerRect.height * imageAspect;
-					} else {
-						renderedWidth = containerRect.width;
-						renderedHeight = containerRect.width / imageAspect;
-					}
-					setRenderedImageInfo({
-						width: renderedWidth,
-						height: renderedHeight,
-						offsetX: (containerRect.width - renderedWidth) / 2,
-						offsetY: (containerRect.height - renderedHeight) / 2,
-					});
-				}
-			});
-		};
-		updateDimensions();
-		const el = containerRef.current;
-		if (!el) return;
-		const observer = new ResizeObserver(updateDimensions);
-		observer.observe(el);
-		return () => {
-			observer.disconnect();
-			if (rafId !== null) cancelAnimationFrame(rafId);
-		};
-	}, [naturalDimensions]);
+	// Rendered image rect (letterbox math) is provided by the shared overlay
+	// measurement hook. It recalculates only on container resize and when
+	// natural dimensions change — theme/scale changes cannot reach it.
+	const renderedImageInfo = useOverlayMeasurement(containerRef, naturalDimensions);
 
 	return {
 		debouncedFrame,
@@ -514,7 +473,6 @@ export function useFrameLoading(opts: {
 		snapshotFailed,
 		naturalDimensions,
 		renderedImageInfo,
-		setRenderedImageInfo,
 		containerRef,
 	};
 }
