@@ -111,7 +111,7 @@ export const Providers = forwardRef<
     <NuqsAdapter>
       <SettingsProvider>
         <AuthGuard>
-          <ThemeProvider defaultTheme="system" storageKey="screenpipe-ui-theme">
+          <ThemeProvider defaultThemeMode="system">
             <ChangelogDialogProvider>
               <PermissionMonitorProvider>
                 <PostHogProvider client={posthog}>{children}</PostHogProvider>
