@@ -10,6 +10,7 @@ import { Loader2, ImageOff, ExternalLink } from "lucide-react";
 import { useKeywordParams } from "@/lib/hooks/use-keyword-params";
 import { useFrameTextData } from "@/lib/hooks/use-frame-text-data";
 import { TextOverlay } from "@/components/text-overlay";
+import { useOverlayMeasurement } from "@/lib/hooks/use-overlay-measurement";
 import { getApiBaseUrl } from "@/lib/api";
 
 const MAX_RETRIES = 3;
@@ -238,18 +239,16 @@ export const MainImage = () => {
 	const { searchResults, currentResultIndex, searchQuery } = useKeywordSearchStore();
 	const imageRef = useRef<HTMLImageElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
-	const [imageRect, setImageRect] = useState<DOMRect | null>(null);
 	const [naturalDimensions, setNaturalDimensions] = useState<{
 		width: number;
 		height: number;
 	} | null>(null);
-	// For object-contain, we need to track the actual rendered image size and offset
-	const [renderedImageDimensions, setRenderedImageDimensions] = useState<{
-		width: number;
-		height: number;
-		offsetX: number;
-		offsetY: number;
-	} | null>(null);
+
+	// Shared overlay measurement: computes the rendered image rect (letterbox
+	// math) from the container size + natural image dims. Recalculates on
+	// container resize and on natural-dim changes only — theme/scale cannot
+	// reach this layer.
+	const renderedImageDimensions = useOverlayMeasurement(containerRef, naturalDimensions);
 
 	const currentFrame = searchResults[currentResultIndex];
 
@@ -270,70 +269,12 @@ export const MainImage = () => {
 			.filter(term => term.length >= 2);
 	}, [searchQuery]);
 
-	useEffect(() => {
-		const updateImageRect = () => {
-			if (imageRef.current) {
-				const rect = imageRef.current.getBoundingClientRect();
-				setImageRect(rect);
-			}
-		};
-
-		updateImageRect();
-		const resizeObserver = new ResizeObserver(updateImageRect);
-		if (containerRef.current) {
-			resizeObserver.observe(containerRef.current);
-		}
-
-		window.addEventListener("resize", updateImageRect);
-		return () => {
-			window.removeEventListener("resize", updateImageRect);
-			resizeObserver.disconnect();
-		};
-	}, [currentFrame]);
-
-	// Reset dimensions when frame changes
+	// Reset natural dimensions when frame changes — the new frame's onLoad
+	// will populate them again, and the measurement hook will recompute once
+	// they land.
 	useEffect(() => {
 		setNaturalDimensions(null);
-		setRenderedImageDimensions(null);
 	}, [currentFrame?.frame_id]);
-
-	// Calculate actual rendered image dimensions for object-contain
-	// The image is scaled to fit while maintaining aspect ratio, centered in container
-	useEffect(() => {
-		if (!naturalDimensions || !imageRect) {
-			setRenderedImageDimensions(null);
-			return;
-		}
-
-		const containerWidth = imageRect.width;
-		const containerHeight = imageRect.height;
-		const imageAspect = naturalDimensions.width / naturalDimensions.height;
-		const containerAspect = containerWidth / containerHeight;
-
-		let renderedWidth: number;
-		let renderedHeight: number;
-
-		if (imageAspect > containerAspect) {
-			// Image is wider than container - width fills, height is letterboxed
-			renderedWidth = containerWidth;
-			renderedHeight = containerWidth / imageAspect;
-		} else {
-			// Image is taller than container - height fills, width is letterboxed
-			renderedHeight = containerHeight;
-			renderedWidth = containerHeight * imageAspect;
-		}
-
-		// Calculate offset (image is centered in container with object-contain)
-		const offsetX = (containerWidth - renderedWidth) / 2;
-		const offsetY = (containerHeight - renderedHeight) / 2;
-
-		setRenderedImageDimensions({
-			width: renderedWidth,
-			height: renderedHeight,
-			offsetX,
-			offsetY,
-		});
-	}, [naturalDimensions, imageRect]);
 
 	const handleOpenInBrowser = useCallback(() => {
 		if (currentFrame?.url) {
@@ -386,9 +327,9 @@ export const MainImage = () => {
 						onLoad={(e) => {
 							handleLoad();
 							const img = e.target as HTMLImageElement;
-							const rect = img.getBoundingClientRect();
-							setImageRect(rect);
-							// Store the image's natural (original) dimensions for text overlay scaling
+							// Store the image's natural (original) dimensions — the
+							// measurement hook picks these up and recomputes the
+							// rendered rect off the container's size.
 							setNaturalDimensions({
 								width: img.naturalWidth,
 								height: img.naturalHeight,

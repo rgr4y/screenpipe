@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 import { open as shellOpen } from "@tauri-apps/plugin-shell";
 import { commands } from "@/lib/utils/tauri";
 import type { TextPosition } from "@/lib/hooks/use-frame-text-data";
+import {
+	projectBoundsToDisplayedRect,
+	type PixelRect,
+} from "@/lib/overlay/geometry";
 
 /**
  * Check if a string looks like a URL.
@@ -160,18 +164,46 @@ interface TextOverlayProps {
 	highlightFading?: boolean;
 }
 
+/**
+ * A URL anchor carries pure geometry only — where the underlying OCR text
+ * lives on the displayed image. Chrome presentation (hit-target expansion,
+ * hover styling, tooltip typography) is applied at render time and does
+ * NOT flow back into these coordinates.
+ */
 interface UrlLink {
 	key: string;
 	normalizedUrl: string;
 	displayUrl: string;
-	left: number;
-	top: number;
-	width: number;
-	height: number;
+	/** Anchor rect in displayed-image pixels — pure geometry. */
+	anchor: PixelRect;
 }
 
-const MIN_LINK_HEIGHT = 24;
-const LINK_PADDING_X = 4;
+/**
+ * Chrome-layer hit-target constants.
+ *
+ * These inflate the anchor rect into a clickable hit box. They deliberately
+ * do NOT participate in the anchor geometry itself — they only affect the
+ * size/position of the <a> element rendered on top of the anchor. Changing
+ * these values must never change overlay coordinate fidelity.
+ *
+ * Kept in raw px (not tied to UI scale) so hover targets behave consistently
+ * regardless of app scale. Overlay chrome that responds to UI scale lives
+ * in typography/tooltip styling, not in hit geometry.
+ */
+const HIT_TARGET_MIN_HEIGHT_PX = 24;
+const HIT_TARGET_PADDING_X_PX = 4;
+
+/** Inflate a pure anchor rect into a comfortable hit target. */
+function inflateAnchorToHitTarget(anchor: PixelRect): PixelRect {
+	const targetHeight = Math.max(anchor.height, HIT_TARGET_MIN_HEIGHT_PX);
+	const extraY = (targetHeight - anchor.height) / 2;
+	return {
+		left: anchor.left - HIT_TARGET_PADDING_X_PX,
+		top: anchor.top - extraY,
+		width: anchor.width + HIT_TARGET_PADDING_X_PX * 2,
+		height: targetHeight,
+	};
+}
 
 /**
  * TextOverlay renders interactive layers over a screenshot:
@@ -198,48 +230,35 @@ export const TextOverlay = memo(function TextOverlay({
 }: TextOverlayProps) {
 	const [hoveredLinkIndex, setHoveredLinkIndex] = useState<number | null>(null);
 
-	// URL links
+	// URL links — geometry-only projection of OCR positions onto the displayed
+	// image. Chrome (hit-target expansion, hover styling) is applied in the
+	// render step and cannot influence these coordinates.
 	const urlLinks = useMemo<UrlLink[]>(() => {
 		if (!displayedWidth || !displayedHeight) return [];
 
+		const displayed = { width: displayedWidth, height: displayedHeight };
 		const links: UrlLink[] = [];
 
 		for (const pos of textPositions) {
 			if (pos.confidence < minConfidence) continue;
 
-			const blockLeft = pos.bounds.left * displayedWidth;
-			const blockTop = pos.bounds.top * displayedHeight;
-			const blockWidth = pos.bounds.width * displayedWidth;
-			const blockHeight = pos.bounds.height * displayedHeight;
-
-			if (
-				blockWidth <= 0 ||
-				blockHeight <= 0 ||
-				blockLeft < 0 ||
-				blockTop < 0 ||
-				blockLeft + blockWidth > displayedWidth + 1 ||
-				blockTop + blockHeight > displayedHeight + 1
-			) {
-				continue;
-			}
+			const block = projectBoundsToDisplayedRect(pos.bounds, displayed);
+			if (!block) continue;
 
 			if (isUrl(pos.text)) {
 				links.push({
 					key: `${links.length}-${pos.text.slice(0, 20)}`,
 					normalizedUrl: normalizeUrl(pos.text),
 					displayUrl: pos.text,
-					left: blockLeft,
-					top: blockTop,
-					width: blockWidth,
-					height: blockHeight,
+					anchor: block,
 				});
 				continue;
 			}
 
 			const extracted = extractUrlsFromText(pos.text);
 			for (const ext of extracted) {
-				const urlLeft = blockLeft + ext.startFraction * blockWidth;
-				const urlWidth = ext.widthFraction * blockWidth;
+				const urlLeft = block.left + ext.startFraction * block.width;
+				const urlWidth = ext.widthFraction * block.width;
 
 				if (urlWidth < 10) continue;
 				if (urlLeft + urlWidth > displayedWidth + 1) continue;
@@ -248,10 +267,12 @@ export const TextOverlay = memo(function TextOverlay({
 					key: `${links.length}-${ext.url.slice(0, 20)}`,
 					normalizedUrl: ext.normalizedUrl,
 					displayUrl: ext.url,
-					left: urlLeft,
-					top: blockTop,
-					width: urlWidth,
-					height: blockHeight,
+					anchor: {
+						left: urlLeft,
+						top: block.top,
+						width: urlWidth,
+						height: block.height,
+					},
 				});
 			}
 		}
@@ -259,8 +280,8 @@ export const TextOverlay = memo(function TextOverlay({
 		return links;
 	}, [textPositions, displayedWidth, displayedHeight, minConfidence]);
 
-	// Search term highlights
-	const highlights = useMemo(() => {
+	// Search term highlights — geometry-only projection of matched OCR blocks.
+	const highlights = useMemo<{ key: string; rect: PixelRect }[]>(() => {
 		if (!highlightTerms?.length || !displayedWidth || !displayedHeight) return [];
 
 		const terms = highlightTerms
@@ -268,7 +289,8 @@ export const TextOverlay = memo(function TextOverlay({
 			.filter(t => t.length > 0);
 		if (terms.length === 0) return [];
 
-		const result: { key: string; left: number; top: number; width: number; height: number }[] = [];
+		const displayed = { width: displayedWidth, height: displayedHeight };
+		const result: { key: string; rect: PixelRect }[] = [];
 
 		for (const pos of textPositions) {
 			if (pos.confidence < minConfidence) continue;
@@ -277,34 +299,26 @@ export const TextOverlay = memo(function TextOverlay({
 			const matches = terms.some(term => textLower.includes(term));
 			if (!matches) continue;
 
-			const blockLeft = pos.bounds.left * displayedWidth;
-			const blockTop = pos.bounds.top * displayedHeight;
-			const blockWidth = pos.bounds.width * displayedWidth;
-			const blockHeight = pos.bounds.height * displayedHeight;
-
-			if (blockWidth <= 0 || blockHeight <= 0) continue;
+			// Use a looser tolerance here — partial bleed at image edges is
+			// acceptable for highlights; we already skip real duplicates below.
+			const rect = projectBoundsToDisplayedRect(pos.bounds, displayed, Number.POSITIVE_INFINITY);
+			if (!rect) continue;
 
 			// Skip if this highlight largely overlaps an existing one
 			// (OCR + accessibility can return near-identical bounding boxes)
-			const isDuplicate = result.some(existing => {
-				const overlapLeft = Math.max(existing.left, blockLeft);
-				const overlapTop = Math.max(existing.top, blockTop);
-				const overlapRight = Math.min(existing.left + existing.width, blockLeft + blockWidth);
-				const overlapBottom = Math.min(existing.top + existing.height, blockTop + blockHeight);
+			const isDuplicate = result.some(({ rect: existing }) => {
+				const overlapLeft = Math.max(existing.left, rect.left);
+				const overlapTop = Math.max(existing.top, rect.top);
+				const overlapRight = Math.min(existing.left + existing.width, rect.left + rect.width);
+				const overlapBottom = Math.min(existing.top + existing.height, rect.top + rect.height);
 				if (overlapRight <= overlapLeft || overlapBottom <= overlapTop) return false;
 				const overlapArea = (overlapRight - overlapLeft) * (overlapBottom - overlapTop);
-				const thisArea = blockWidth * blockHeight;
+				const thisArea = rect.width * rect.height;
 				return overlapArea > thisArea * 0.5;
 			});
 			if (isDuplicate) continue;
 
-			result.push({
-				key: `hl-${result.length}`,
-				left: blockLeft,
-				top: blockTop,
-				width: blockWidth,
-				height: blockHeight,
-			});
+			result.push({ key: `hl-${result.length}`, rect });
 		}
 
 		return result;
@@ -337,7 +351,7 @@ export const TextOverlay = memo(function TextOverlay({
 				pointerEvents: "none",
 			}}
 		>
-			{/* Search term highlights */}
+			{/* Search term highlights — geometry rects with chrome colors applied on render. */}
 			{highlights.length > 0 && (
 				<div
 					className="absolute inset-0 pointer-events-none"
@@ -346,15 +360,17 @@ export const TextOverlay = memo(function TextOverlay({
 						transition: "opacity 600ms ease-out",
 					}}
 				>
-					{highlights.map((hl) => (
+					{highlights.map(({ key, rect }) => (
 						<div
-							key={hl.key}
+							key={key}
 							className="absolute"
 							style={{
-								left: hl.left,
-								top: hl.top,
-								width: hl.width,
-								height: hl.height,
+								// Geometry (px, theme-agnostic):
+								left: rect.left,
+								top: rect.top,
+								width: rect.width,
+								height: rect.height,
+								// Chrome (color/border — swap for theme tokens in a future pass):
 								backgroundColor: "rgba(250, 204, 21, 0.35)",
 								border: "1px solid rgba(250, 204, 21, 0.7)",
 								borderRadius: "2px",
@@ -363,14 +379,10 @@ export const TextOverlay = memo(function TextOverlay({
 					))}
 				</div>
 			)}
-			{/* URL links — on top of text blocks */}
+			{/* URL links — hit-target rect is computed from the pure anchor. */}
 			{urlLinks.map((link, index) => {
 				const isHovered = hoveredLinkIndex === index;
-
-				const rawH = link.height;
-				const targetH = Math.max(rawH, MIN_LINK_HEIGHT);
-				const extraY = (targetH - rawH) / 2;
-				const targetW = link.width + LINK_PADDING_X * 2;
+				const hit = inflateAnchorToHitTarget(link.anchor);
 
 				return (
 					<a
@@ -381,10 +393,12 @@ export const TextOverlay = memo(function TextOverlay({
 						onMouseLeave={() => setHoveredLinkIndex(null)}
 						className="absolute block"
 						style={{
-							left: link.left - LINK_PADDING_X,
-							top: link.top - extraY,
-							width: targetW,
-							height: targetH,
+							// Geometry (px, theme-agnostic):
+							left: hit.left,
+							top: hit.top,
+							width: hit.width,
+							height: hit.height,
+							// Chrome (hover styling, cursor, z-index):
 							cursor: "pointer",
 							pointerEvents: "auto",
 							zIndex: 5,
@@ -411,7 +425,7 @@ export const TextOverlay = memo(function TextOverlay({
 							<span
 								className="absolute left-0 whitespace-nowrap text-xs px-2 py-1 rounded shadow-lg border z-50"
 								style={{
-									bottom: targetH + 4,
+									bottom: hit.height + 4,
 									backgroundColor: "rgba(0, 0, 0, 0.85)",
 									color: "rgba(96, 165, 250, 1)",
 									borderColor: "rgba(96, 165, 250, 0.3)",
