@@ -11,13 +11,29 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // NOTE: root error boundary runs outside the theme provider, but globals.css
+  // is still loaded, so we can consume the CSS variables directly via inline
+  // styles. Using semantic tokens keeps this surface theme-aware.
   return (
     <html lang="en">
-      <body style={{ margin: 0, backgroundColor: "#0a0a0a", color: "#fff", fontFamily: "system-ui, sans-serif" }}>
+      <body
+        style={{
+          margin: 0,
+          backgroundColor: "hsl(var(--background))",
+          color: "hsl(var(--foreground))",
+          fontFamily: "system-ui, sans-serif",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
           <div style={{ textAlign: "center", padding: "2rem" }}>
             <h2 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>something went wrong</h2>
-            <p style={{ fontSize: "0.875rem", color: "#999", marginBottom: "1.5rem" }}>
+            <p
+              style={{
+                fontSize: "0.875rem",
+                color: "hsl(var(--muted-foreground))",
+                marginBottom: "1.5rem",
+              }}
+            >
               {error.message || "an unexpected error occurred"}
             </p>
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
@@ -25,10 +41,10 @@ export default function GlobalError({
                 onClick={reset}
                 style={{
                   padding: "0.5rem 1rem",
-                  backgroundColor: "#fff",
-                  color: "#000",
+                  backgroundColor: "hsl(var(--primary))",
+                  color: "hsl(var(--primary-foreground))",
                   border: "none",
-                  borderRadius: "0.375rem",
+                  borderRadius: "var(--radius)",
                   cursor: "pointer",
                   fontSize: "0.875rem",
                 }}
@@ -39,10 +55,10 @@ export default function GlobalError({
                 onClick={() => window.location.reload()}
                 style={{
                   padding: "0.5rem 1rem",
-                  backgroundColor: "#262626",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.375rem",
+                  backgroundColor: "hsl(var(--secondary))",
+                  color: "hsl(var(--secondary-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "var(--radius)",
                   cursor: "pointer",
                   fontSize: "0.875rem",
                 }}
