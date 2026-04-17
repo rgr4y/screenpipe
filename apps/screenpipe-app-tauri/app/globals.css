@@ -101,8 +101,16 @@
     --sidebar-border: 0 0% 80%;
     --sidebar-ring: 0 0% 0%;
 
-    /* Sharp corners - no radius */
+    /* Sharp corners - no radius (Screenpipe default; overridden by theme engine) */
     --radius: 0;
+
+    /*
+     * UI scale — stepped app-wide multiplier, written by the theme provider.
+     * Default here is 1.0 so first paint is correct before JS runs.
+     * Do NOT read this value from capture/OCR/media geometry code.
+     */
+    --ui-scale: 1;
+    --ui-font-size: 16px;
   }
 
   .dark {
@@ -207,6 +215,9 @@
   /* Prevent flash during theme initialization and support transparency */
   html {
     background-color: hsl(var(--background));
+    /* Scale-aware base font size. The provider updates --ui-font-size on
+       document.documentElement so every rem-sized surface picks it up. */
+    font-size: var(--ui-font-size, 16px);
     transition: background-color 0ms; /* Instant transition to prevent flash */
   }
 
