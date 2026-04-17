@@ -71,6 +71,7 @@ import {
   Settings,
 } from "@/lib/hooks/use-settings";
 import { useTeam } from "@/lib/hooks/use-team";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 import { useToast } from "@/components/ui/use-toast";
 import { useHealthCheck } from "@/lib/hooks/use-health-check";
 import { Badge } from "@/components/ui/badge";
@@ -1219,12 +1220,12 @@ Your screen is a pipe. Everything you see, hear, and type flows through it. Scre
                   </SelectGroup>
                   <SelectGroup>
                     <SelectLabel className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">offline</SelectLabel>
-                    <SelectItem value="whisper-large-v3-turbo">Whisper Turbo</SelectItem>
-                    <SelectItem value="whisper-large-v3-turbo-quantized">Whisper Turbo (fast)</SelectItem>
-                    <SelectItem value="whisper-tiny">Whisper Tiny</SelectItem>
-                    <SelectItem value="whisper-tiny-quantized">Whisper Tiny (fast)</SelectItem>
+                    <SelectItem value="whisper-large-v3-turbo">Whisper Turbo{isRobMode() ? " (fp16, ~1.5GB)" : ""}</SelectItem>
+                    <SelectItem value="whisper-large-v3-turbo-quantized">Whisper Turbo (fast){isRobMode() ? " — Q8_0, ~834MB" : ""}</SelectItem>
+                    <SelectItem value="whisper-tiny">Whisper Tiny{isRobMode() ? " (fp16, ~75MB)" : ""}</SelectItem>
+                    <SelectItem value="whisper-tiny-quantized">Whisper Tiny (fast){isRobMode() ? " — Q8_0, ~44MB" : ""}</SelectItem>
                     {!isMacOS && <SelectItem value="qwen3-asr">Qwen3-ASR</SelectItem>}
-                    <SelectItem value="parakeet">Parakeet{isMacOS ? " (experimental)" : ""}</SelectItem>
+                    <SelectItem value="parakeet">Parakeet{isMacOS ? " (experimental)" : ""}{isRobMode() ? " — MLX, ~600MB" : ""}</SelectItem>
                   </SelectGroup>
                   <SelectGroup>
                     <SelectLabel className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">other</SelectLabel>
@@ -1880,7 +1881,8 @@ Your screen is a pipe. Everything you see, hear, and type flows through it. Scre
       </LockedSetting>
 
 
-      {/* System */}
+      {/* System — hidden in ROB_MODE */}
+      {!isRobMode() && (
       <div className="space-y-2 pt-2">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">System</h2>
 
@@ -1899,6 +1901,7 @@ Your screen is a pipe. Everything you see, hear, and type flows through it. Scre
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Voice Training Dialog */}
       <Dialog open={voiceTraining.dialogOpen} onOpenChange={(open) => {

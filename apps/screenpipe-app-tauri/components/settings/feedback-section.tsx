@@ -8,12 +8,33 @@ import { ShareLogsButton } from "@/components/share-logs-button";
 import { MessageSquare, Github, Lightbulb, ChevronDown, ChevronUp, Calendar, FileText } from "lucide-react";
 import { open } from "@tauri-apps/plugin-shell";
 import { useSettings } from "@/lib/hooks/use-settings";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 import { IntercomChat } from "./intercom-chat";
 
 export function FeedbackSection() {
   const { settings } = useSettings();
   const [chatOpen, setChatOpen] = useState(false);
   const isLoggedIn = !!settings.user?.email;
+
+  // ROB_MODE: help page replaced with single "Call Rob" card
+  if (isRobMode()) {
+    return (
+      <div className="space-y-5" data-testid="section-help">
+        <p className="text-muted-foreground text-sm mb-4">
+          Need help? Call Rob.
+        </p>
+        <div className="px-3 py-6 bg-card border border-border">
+          <div className="flex items-center gap-2.5">
+            <MessageSquare className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div>
+              <h3 className="text-base font-medium text-foreground">Call Rob</h3>
+              <p className="text-xs text-muted-foreground">he knows what&apos;s up</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5" data-testid="section-help">
@@ -105,8 +126,8 @@ export function FeedbackSection() {
           </div>
         </div>
 
-        {/* Live chat — only visible when logged in */}
-        {isLoggedIn && (
+        {/* Live chat — only visible when logged in; hidden in ROB_MODE */}
+        {isLoggedIn && process.env.NEXT_PUBLIC_ROB_MODE !== "1" && (
           <div className="bg-card border border-border">
             <button
               onClick={() => setChatOpen(!chatOpen)}

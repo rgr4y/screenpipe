@@ -42,9 +42,10 @@ export default function OnboardingPage() {
   const { onboardingData, isLoading } = useOnboarding();
   const isEnterprise = useIsEnterpriseBuild();
 
-  // Enterprise builds skip the login slide
+  // Enterprise + ROB_MODE skip the login slide
   useEffect(() => {
-    if (isEnterprise && currentSlide === "login") {
+    const skipLogin = isEnterprise || process.env.NEXT_PUBLIC_ROB_MODE === "1";
+    if (skipLogin && currentSlide === "login") {
       setCurrentSlide("permissions");
     }
   }, [isEnterprise, currentSlide]);

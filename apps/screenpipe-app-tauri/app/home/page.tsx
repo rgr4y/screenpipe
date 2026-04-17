@@ -35,6 +35,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useSettings } from "@/lib/hooks/use-settings";
 import { useTeam } from "@/lib/hooks/use-team";
 import { useEnterprisePolicy } from "@/lib/hooks/use-enterprise-policy";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 import { EnterpriseLicensePrompt } from "@/components/enterprise-license-prompt";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { computeMeetingActive, type MeetingRow } from "@/lib/utils/meeting-state";
@@ -504,8 +505,8 @@ function HomeContent() {
               {/* Spacer */}
               <div className="flex-1" />
 
-              {/* Team promo card — hidden when user already has a team, sidebar collapsed, or enterprise */}
-              {!teamState.team && !sidebarCollapsed && !isSectionHidden("team") && !teamPromoDismissed && (
+              {/* Team promo card — hidden when user already has a team, sidebar collapsed, enterprise, or ROB_MODE */}
+              {!teamState.team && !sidebarCollapsed && !isSectionHidden("team") && !teamPromoDismissed && !isRobMode() && (
                 <div className={cn("mx-1 mb-3 p-3 border relative group", isTranslucent ? "vibrant-card-border" : "border-border bg-card")}>
                   <button
                     onClick={() => {
@@ -533,8 +534,8 @@ function HomeContent() {
 
               {/* Bottom items */}
               <div className={cn("space-y-0.5 border-t pt-2", isTranslucent ? "vibrant-sidebar-border" : "border-border")}>
-                {/* Team link — hide invite promo in enterprise (unless team exists) */}
-                {(!isSectionHidden("team") || teamState.team) && (() => {
+                {/* Team link — hide invite promo in enterprise (unless team exists) or ROB_MODE */}
+                {(!isSectionHidden("team") || teamState.team) && !isRobMode() && (() => {
                   const teamLabel = teamState.team
                     ? `Your team (${teamState.members.length})`
                     : "Invite your team";
@@ -562,8 +563,8 @@ function HomeContent() {
                   return btn;
                 })()}
 
-                {/* Get free month — hidden in enterprise */}
-                {!isSectionHidden("referral") && (() => {
+                {/* Get free month — hidden in enterprise or ROB_MODE */}
+                {!isSectionHidden("referral") && !isRobMode() && (() => {
                   const btn = (
                     <button
                       onClick={() => openSettings("referral")}

@@ -544,7 +544,8 @@ fn create_dynamic_menu(
     }
 
     // --- Plan / usage info ---
-    if !is_tray_item_hidden("tray_plan") {
+    let rob_mode = option_env!("ROB_MODE") == Some("1");
+    if !is_tray_item_hidden("tray_plan") && !rob_mode {
         let is_pro = data.cloud_subscribed;
         menu_builder = menu_builder.item(&PredefinedMenuItem::separator(app)?);
         if is_pro {

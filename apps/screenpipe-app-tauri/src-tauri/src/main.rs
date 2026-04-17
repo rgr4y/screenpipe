@@ -401,8 +401,11 @@ async fn main() {
     let _posthog_disabled = telemetry_disabled || offline_mode;
 
     let app_version = env!("CARGO_PKG_VERSION");
+    // ROB_MODE: disable Sentry by default (baked at compile time).
+    // Flip this back on once Rob swaps DSN for own project.
+    let rob_mode = option_env!("ROB_MODE") == Some("1");
     // Sentry disabled only when telemetry is explicitly off, NOT for offline mode
-    let sentry_guard = if !telemetry_disabled {
+    let sentry_guard = if !telemetry_disabled && !rob_mode {
         Some(sentry::init((
             "https://da4edafe2c8e5e8682505945695ecad7@o4505591122886656.ingest.us.sentry.io/4510761355116544",
             sentry::ClientOptions {
@@ -1319,8 +1322,24 @@ async fn main() {
                 });
             }
 
+            // ROB_MODE: mark onboarding complete on first launch so we skip
+            // login + permissions wizard. Permissions still requested lazily
+            // by the features that need them (screen record, mic, etc.).
+            let rob_mode = option_env!("ROB_MODE") == Some("1");
+            let is_completed = if rob_mode && !onboarding_store.is_completed {
+                if let Err(e) = store::OnboardingStore::update(&app.handle(), |o| o.complete()) {
+                    warn!("ROB_MODE: failed to mark onboarding completed: {}", e);
+                    false
+                } else {
+                    info!("ROB_MODE: onboarding marked completed");
+                    true
+                }
+            } else {
+                onboarding_store.is_completed
+            };
+
             // Show onboarding window if not completed
-            if !onboarding_store.is_completed {
+            if !is_completed {
                 let _ = ShowRewindWindow::Onboarding.show(&app.handle());
             } else {
                 let _ = ShowRewindWindow::Home { page: None }.show(&app.handle());

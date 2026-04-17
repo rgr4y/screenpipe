@@ -133,7 +133,7 @@ pub struct UpdatesManager {
 
 impl UpdatesManager {
     pub fn new(app: &tauri::AppHandle, interval_minutes: u64) -> Result<Self, Error> {
-        let update_menu_item = if is_enterprise_build(app) {
+        let update_menu_item = if is_enterprise_build(app) || option_env!("ROB_MODE") == Some("1") {
             None
         } else {
             let (menu_text, enabled) = if is_source_build(app) {
@@ -182,6 +182,12 @@ impl UpdatesManager {
         // Enterprise: updates managed by IT (Intune/RoboPack), no in-app check
         if is_enterprise_build(&self.app) {
             info!("enterprise build, updates managed by IT");
+            return Result::Ok(false);
+        }
+
+        // ROB_MODE: skip auto-update entirely (no phone home to screenpi.pe)
+        if option_env!("ROB_MODE") == Some("1") {
+            info!("ROB_MODE build, auto-update disabled");
             return Result::Ok(false);
         }
 

@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useSettings, Settings } from "@/lib/hooks/use-settings";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 import { ScheduleSettings } from "./schedule-settings";
 import { useTeam } from "@/lib/hooks/use-team";
 import { useToast } from "@/components/ui/use-toast";
@@ -1250,7 +1251,8 @@ export function PrivacySection() {
         )}
       </div>
 
-      {/* Telemetry */}
+      {/* Telemetry — hidden in ROB_MODE (telemetry already disabled at compile time) */}
+      {!isRobMode() && (
       <div className="space-y-2">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
           Telemetry
@@ -1282,6 +1284,7 @@ export function PrivacySection() {
         </Card>
         </LockedSetting>
       </div>
+      )}
 
       {/* Floating apply & restart button */}
       {hasUnsavedChanges && (

@@ -80,6 +80,11 @@ impl AnalyticsManager {
             return;
         }
 
+        // ROB_MODE: skip attribution phone-home
+        if option_env!("ROB_MODE") == Some("1") {
+            return;
+        }
+
         match self
             .client
             .get("https://screenpi.pe/api/attribution")

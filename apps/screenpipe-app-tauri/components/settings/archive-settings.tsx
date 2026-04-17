@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useSettings, getStore, saveAndEncrypt } from "@/lib/hooks/use-settings";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -98,6 +99,9 @@ export function ArchiveSettings() {
     const interval = setInterval(fetchStatus, pollMs);
     return () => clearInterval(interval);
   }, [archiveEnabled, fetchStatus, status?.is_uploading]);
+
+  // ROB_MODE: hide cloud archive UI entirely (Pro feature)
+  if (isRobMode()) return null;
 
   // Persist archive settings to the Rust-readable store key so the backend
   // can auto-initialize on startup without needing the frontend.

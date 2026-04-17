@@ -80,6 +80,7 @@ import { toast } from "../ui/use-toast";
 import { Card, CardContent } from "../ui/card";
 import { AIProviderType } from "@/lib/hooks/use-settings";
 import { useIsEnterpriseBuild } from "@/lib/hooks/use-is-enterprise-build";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 import { useTeam } from "@/lib/hooks/use-team";
 import {
   AlertDialog,
@@ -110,16 +111,6 @@ const formatPresetName = (name: string): string => {
     return `Preset ${name.slice(0, 8)}...`;
   }
   return name;
-};
-
-const isLocalhostUrl = (url?: string): boolean => {
-  if (!url) return false;
-  try {
-    const hostname = new URL(url).hostname.toLowerCase();
-    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-  } catch {
-    return false;
-  }
 };
 
 type DiagnosticStatus = "pass" | "fail" | "skip" | "pending" | "running";
@@ -236,6 +227,8 @@ const AISection = ({
 }) => {
   const { settings, updateSettings } = useSettings();
   const isEnterprise = useIsEnterpriseBuild();
+  // ROB_MODE: hide screenpipe-cloud provider (same treatment as enterprise)
+  const hideScreenpipeCloud = isEnterprise || isRobMode();
   const [settingsPreset, setSettingsPreset] = useState<
     Partial<AIPreset> | undefined
   >(preset);
@@ -251,8 +244,8 @@ const AISection = ({
 
   // Filter presets the same way the UI does so hidden presets don't block creation
   const visiblePresets = useMemo(
-    () => settings.aiPresets.filter((p) => !isEnterprise || p.provider !== "screenpipe-cloud"),
-    [settings.aiPresets, isEnterprise]
+    () => settings.aiPresets.filter((p) => !hideScreenpipeCloud || p.provider !== "screenpipe-cloud"),
+    [settings.aiPresets, hideScreenpipeCloud]
   );
 
   // Optimized validation with debouncing
@@ -605,11 +598,10 @@ const AISection = ({
         chat: { status: "running", message: "Sending test message..." },
       }));
     } else {
-      // Local custom providers often do not implement browser CORS preflight on /models.
+      // Custom providers often do not implement CORS preflight on /models.
+      // Use tauriFetch for all custom providers to skip browser OPTIONS preflight.
       const modelsFetchFn =
-        settingsPreset?.provider === "custom" && isLocalhostUrl(settingsPreset?.url)
-          ? tauriFetch
-          : fetch;
+        settingsPreset?.provider === "custom" ? tauriFetch : fetch;
       try {
         modelsResponse = await modelsFetchFn(modelsUrl, {
           headers,
@@ -880,8 +872,7 @@ const AISection = ({
           break;
         case "custom":
           try {
-            const customFetchFn = isLocalhostUrl(settingsPreset?.url) ? tauriFetch : fetch;
-            const customResponse = await customFetchFn(
+            const customResponse = await tauriFetch(
               `${settingsPreset?.url}/models`,
               {
                 headers: settingsPreset.apiKey
@@ -965,7 +956,7 @@ const AISection = ({
               const chatgptResp = await fetch("https://api.openai.com/v1/models", {
                 headers: { Authorization: `Bearer ${tokenResult.data}` },
               });
-              console.log("[chatgpt] /v1/models status:", chatgptResp.status);
+              console.debug("[chatgpt] /v1/models status:", chatgptResp.status);
               if (chatgptResp.ok) {
                 const chatgptData = await chatgptResp.json();
                 const chatgptModels = (chatgptData.data || [])
@@ -981,7 +972,7 @@ const AISection = ({
                 }
               } else {
                 const body = await chatgptResp.text();
-                console.warn("[chatgpt] /v1/models failed:", chatgptResp.status, body);
+                console.debug("[chatgpt] /v1/models failed (expected for OAuth tokens):", chatgptResp.status, body);
               }
             } else {
               console.warn("[chatgpt] get_token failed:", tokenResult.status === "error" ? tokenResult.error : "unknown");
@@ -1163,7 +1154,7 @@ const AISection = ({
             onClick={() => handleAiProviderChange("native-ollama")}
           />
 
-          {piAvailable && (
+          {piAvailable && !hideScreenpipeCloud && (
             <AIProviderCard
               type="screenpipe-cloud"
               title="Screenpipe Cloud"
@@ -1831,6 +1822,8 @@ export const AIPresets = () => {
   );
   const [isDuplicating, setIsDuplicating] = useState(false);
   const isEnterprise = useIsEnterpriseBuild();
+  // ROB_MODE: also hides screenpipe-cloud presets here
+  const hideScreenpipeCloud = isEnterprise || isRobMode();
   const [piAvailable, setPiAvailable] = useState(false);
   const team = useTeam();
   const isTeamAdmin = !!team.team && team.role === "admin";
@@ -2079,11 +2072,11 @@ export const AIPresets = () => {
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
-          items={settings.aiPresets.filter((preset) => !isEnterprise || preset.provider !== "screenpipe-cloud").map((p) => p.id)}
+          items={settings.aiPresets.filter((preset) => !hideScreenpipeCloud || preset.provider !== "screenpipe-cloud").map((p) => p.id)}
           strategy={rectSortingStrategy}
         >
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3">
-            {settings.aiPresets.filter((preset) => !isEnterprise || preset.provider !== "screenpipe-cloud").map((preset) => (
+            {settings.aiPresets.filter((preset) => !hideScreenpipeCloud || preset.provider !== "screenpipe-cloud").map((preset) => (
               <SortablePresetCard
                 key={preset.id}
                 preset={preset}

@@ -786,6 +786,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 	};
 
 	const loadUser = async (token: string) => {
+		// ROB_MODE: skip user-load phone-home (login disabled)
+		if (process.env.NEXT_PUBLIC_ROB_MODE === "1") return;
 		try {
 			const response = await fetch(`https://screenpi.pe/api/user`, {
 				method: "POST",

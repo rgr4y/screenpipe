@@ -41,6 +41,7 @@ import { NotificationsSettings } from "@/components/settings/notifications-setti
 import { UsageSection } from "@/components/settings/usage-section";
 import { SpeakersSection } from "@/components/settings/speakers-section";
 import { useEnterprisePolicy } from "@/lib/hooks/use-enterprise-policy";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 import { useSettings } from "@/lib/hooks/use-settings";
 import { commands } from "@/lib/utils/tauri";
 import { toast } from "@/components/ui/use-toast";
@@ -172,8 +173,13 @@ function ReferralSection() {
 
 function SettingsContent() {
   const router = useRouter();
-  const { isSectionHidden } = useEnterprisePolicy();
+  const { isSectionHidden: isSectionHiddenByPolicy } = useEnterprisePolicy();
   const { isTranslucent } = useSidebarContext();
+
+  // ROB_MODE: hide team + referral + account sections (Mediar cloud features)
+  const ROB_HIDDEN: ReadonlySet<string> = new Set(["team", "referral", "account"]);
+  const isSectionHidden = (id: string) =>
+    isSectionHiddenByPolicy(id) || (isRobMode() && ROB_HIDDEN.has(id));
 
   const [section, setSection] = useQueryState<SettingsSection>("section", {
     defaultValue: "display",

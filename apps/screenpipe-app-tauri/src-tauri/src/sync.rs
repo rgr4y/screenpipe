@@ -486,6 +486,12 @@ pub async fn lock_sync(app: AppHandle, state: State<'_, SyncState>) -> Result<()
 /// Auto-start cloud sync on app launch if previously enabled.
 /// Called from main.rs during startup.
 pub async fn auto_start_sync(app: &AppHandle, state: &SyncState) {
+    // ROB_MODE: never auto-start cloud sync
+    if option_env!("ROB_MODE") == Some("1") {
+        info!("ROB_MODE: skipping cloud sync auto-start");
+        return;
+    }
+
     // Only auto-start if user previously enabled sync and saved a password
     let password = match CloudSyncSettingsStore::get(app) {
         Ok(Some(s)) if s.enabled && !s.encrypted_password.is_empty() => {

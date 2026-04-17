@@ -12,6 +12,7 @@ import { platform, arch } from "@tauri-apps/plugin-os";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsEnterpriseBuild } from "@/lib/hooks/use-is-enterprise-build";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 
 interface UpdateInfo {
   version: string;
@@ -74,7 +75,7 @@ export function UpdateBanner({ className, compact = false }: UpdateBannerProps) 
   const { isVisible, updateInfo, isInstalling, isDownloading, downloadProgress, setIsVisible, setIsInstalling, pendingUpdate, authRequired, setAuthRequired } = useUpdateBanner();
   const { toast } = useToast();
 
-  if (isEnterprise) return null;
+  if (isEnterprise || isRobMode()) return null;
 
   const handleUpdate = async () => {
     setIsInstalling(true);

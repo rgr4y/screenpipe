@@ -63,6 +63,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const verifyToken = useCallback(async () => {
     const token = tokenRef.current;
     if (!token) return;
+    // ROB_MODE: skip session-verify phone-home
+    if (process.env.NEXT_PUBLIC_ROB_MODE === "1") return;
 
     try {
       const res = await fetch("https://screenpi.pe/api/user", {

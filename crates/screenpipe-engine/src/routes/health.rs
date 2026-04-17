@@ -28,22 +28,6 @@ static HEALTH_CACHE: std::sync::LazyLock<RwLock<(u64, Option<HealthCheckResponse
 /// Minimum interval between full health recomputations (in seconds).
 const HEALTH_CACHE_TTL_SECS: u64 = 1;
 
-/// Describe the most likely cause of a DB-write stall from pool stats.
-/// Old message always said "pool exhaustion likely" which was wrong when the
-/// real cause was elsewhere (e.g. metrics gap on reconciliation path) and the
-/// pools were fully idle. Only call out pool saturation when idle counts are 0.
-fn suspected_stall_cause(read_idle: u32, write_idle: u32) -> &'static str {
-    if write_idle == 0 && read_idle == 0 {
-        "both pools saturated"
-    } else if write_idle == 0 {
-        "write pool saturated"
-    } else if read_idle == 0 {
-        "read pool saturated"
-    } else {
-        "pools idle — cause upstream (writer path, lock contention, or missing metrics)"
-    }
-}
-
 use screenpipe_screen::monitor::{
     get_cached_monitor_descriptions, get_monitor_by_id, list_monitors, list_monitors_detailed,
     MonitorListError,
@@ -296,10 +280,9 @@ async fn health_check_inner(state: &Arc<AppState>) -> HealthCheckResponse {
                 LAST_VISION_STALL_LOG.store(now_ts, Ordering::Relaxed);
                 let (rs, ri, ws, wi) = state.db.pool_stats();
                 warn!(
-                    "health_check: vision DB writes stalled — capture heartbeat {}s ago but last DB write {}s ago ({}) | pool: read={}/{} idle, write={}/{} idle",
+                    "health_check: vision DB writes stalled — capture heartbeat {}s ago but last DB write {}s ago (pool exhaustion likely) | pool: read={}/{} idle, write={}/{} idle",
                     now_ts.saturating_sub(vision_snap.last_capture_attempt_ts),
                     now_ts.saturating_sub(vision_snap.last_db_write_ts),
-                    suspected_stall_cause(ri, wi),
                     ri, rs, wi, ws,
                 );
             }
@@ -329,9 +312,8 @@ async fn health_check_inner(state: &Arc<AppState>) -> HealthCheckResponse {
                 LAST_AUDIO_STALL_LOG.store(now_ts, Ordering::Relaxed);
                 let (rs, ri, ws, wi) = state.db.pool_stats();
                 warn!(
-                    "health_check: audio transcription writes stalled — transcription active but last DB write {}s ago ({}) | pool: read={}/{} idle, write={}/{} idle",
+                    "health_check: audio DB writes stalled — transcription active but last DB write {}s ago (pool exhaustion/lock contention likely) | pool: read={}/{} idle, write={}/{} idle",
                     if audio_snap.last_db_write_ts > 0 { now_ts.saturating_sub(audio_snap.last_db_write_ts) } else { 0 },
-                    suspected_stall_cause(ri, wi),
                     ri, rs, wi, ws,
                 );
             }
@@ -491,7 +473,7 @@ async fn health_check_inner(state: &Arc<AppState>) -> HealthCheckResponse {
             }
             if vision_db_write_stalled {
                 detail_parts.push(format!(
-                    "vision DB writes stalled for {}s — capture running but DB writes not landing",
+                    "vision DB writes stalled for {}s — capture running but data not saved (restart recommended)",
                     now_ts.saturating_sub(vision_snap.last_db_write_ts)
                 ));
             }
@@ -504,11 +486,8 @@ async fn health_check_inner(state: &Arc<AppState>) -> HealthCheckResponse {
                 ));
             }
             if audio_db_write_stalled {
-                // Audio files themselves are persisted to disk + audio_chunks table
-                // before transcription is attempted. This stall reflects
-                // audio_transcriptions writes, not raw audio loss.
                 detail_parts.push(format!(
-                    "audio transcription writes stalled for {}s — audio captured, transcription not landing",
+                    "audio DB writes stalled for {}s — devices active but data not saved (restart recommended)",
                     now_ts.saturating_sub(audio_snap.last_db_write_ts)
                 ));
             }

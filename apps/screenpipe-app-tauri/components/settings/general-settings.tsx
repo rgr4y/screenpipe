@@ -19,6 +19,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { commands, CacheFile } from "@/lib/utils/tauri";
 import { UpdateBanner } from "@/components/update-banner";
 import { useIsEnterpriseBuild } from "@/lib/hooks/use-is-enterprise-build";
+import { isRobMode } from "@/lib/hooks/use-rob-mode";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +41,8 @@ function formatBytes(bytes: number): string {
 
 export default function GeneralSettings() {
   const isEnterprise = useIsEnterpriseBuild();
+  // ROB_MODE: treat same as enterprise for cloud/update-related toggles
+  const hideCloudStuff = isEnterprise || isRobMode();
   const { settings, updateSettings } = useSettings();
   const { toast } = useToast();
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
@@ -139,7 +142,7 @@ export default function GeneralSettings() {
         </Card>
         </LockedSetting>
 
-        {!isEnterprise && (
+        {!hideCloudStuff && (
           <Card className="border-border bg-card">
             <CardContent className="px-3 py-2.5">
               <div className="flex items-center justify-between">
@@ -185,6 +188,7 @@ export default function GeneralSettings() {
           </CardContent>
         </Card>
 
+        {!hideCloudStuff && (
         <Card className="border-border bg-card">
           <CardContent className="px-3 py-2.5">
             <div className="flex items-center justify-between">
@@ -215,8 +219,9 @@ export default function GeneralSettings() {
             </div>
           </CardContent>
         </Card>
+        )}
 
-        {!isEnterprise && (
+        {!hideCloudStuff && (
           <Card className="border-border bg-card">
             <CardContent className="px-3 py-2.5">
               <div className="flex items-center justify-between">

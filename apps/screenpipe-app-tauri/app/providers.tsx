@@ -86,6 +86,8 @@ export const Providers = forwardRef<
     if (typeof window !== "undefined") {
       const isDebug = process.env.TAURI_ENV_DEBUG === "true";
       if (isDebug) return;
+      // ROB_MODE: skip PostHog entirely
+      if (process.env.NEXT_PUBLIC_ROB_MODE === "1") return;
       posthog.init("phc_z7FZXE8vmXtdTQ78LMy3j1BQWW4zP6PGDUP46rgcdnb", {
         api_host: "https://us.i.posthog.com",
         person_profiles: "identified_only",

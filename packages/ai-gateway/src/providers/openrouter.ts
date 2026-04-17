@@ -24,12 +24,13 @@ export class OpenRouterProvider implements AIProvider {
 	private client: OpenAI;
 
 	constructor(apiKey: string) {
+		const robMode = (typeof process !== 'undefined' && process.env?.ROB_MODE === '1');
 		this.client = new OpenAI({
 			apiKey,
 			baseURL: 'https://openrouter.ai/api/v1',
 			defaultHeaders: {
-				'HTTP-Referer': 'https://screenpi.pe',
-				'X-Title': 'screenpipe',
+				'HTTP-Referer': robMode ? 'https://robvella.com' : 'https://screenpi.pe',
+				'X-Title': robMode ? 'robvella' : 'screenpipe',
 			},
 		});
 	}
