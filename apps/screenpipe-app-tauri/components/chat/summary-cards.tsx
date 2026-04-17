@@ -142,7 +142,7 @@ export function SummaryCards({
       <h3 className="text-sm font-medium mb-0.5 text-foreground">
         {userName ? `How can I help, ${userName}?` : "How can I help today?"}
       </h3>
-      <p className="text-[11px] text-muted-foreground mb-2">
+      <p className="text-[0.6875rem] text-muted-foreground mb-2">
         One-click summaries from your screen activity
       </p>
 
@@ -156,10 +156,10 @@ export function SummaryCards({
             className="group text-left p-2 border border-border/40 bg-muted/20 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer"
           >
             <div className="text-sm mb-0.5">{pipe.icon}</div>
-            <div className="text-[11px] font-medium group-hover:text-background mb-0.5 leading-tight">
+            <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
               {pipe.title}
             </div>
-            <div className="text-[10px] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
+            <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
               {pipe.description}
             </div>
           </button>
@@ -170,10 +170,10 @@ export function SummaryCards({
           className="group text-left p-2 border border-dashed border-border/40 bg-muted/5 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer"
         >
           <div className="text-sm mb-0.5">{"\u2728"}</div>
-          <div className="text-[11px] font-medium group-hover:text-background mb-0.5 leading-tight">
+          <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
             Custom Summary
           </div>
-          <div className="text-[10px] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
+          <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
             Build your own
           </div>
         </button>
@@ -184,10 +184,10 @@ export function SummaryCards({
             className="group text-left p-2 border border-border/40 bg-muted/10 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer"
           >
             <div className="text-sm mb-0.5">{"\u{1F50D}"}</div>
-            <div className="text-[11px] font-medium group-hover:text-background mb-0.5 leading-tight">
+            <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
               {showAll ? "Show Less" : "Discover"}
             </div>
-            <div className="text-[10px] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1 flex items-center gap-1">
+            <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1 flex items-center gap-1">
               {showAll ? (
                 <>Collapse <ChevronUp className="w-3 h-3 inline" /></>
               ) : (
@@ -213,10 +213,10 @@ export function SummaryCards({
               className="group text-left p-2 border border-border/30 bg-muted/10 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer"
             >
               <div className="text-sm mb-0.5">{pipe.icon}</div>
-              <div className="text-[11px] font-medium group-hover:text-background mb-0.5 leading-tight">
+              <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
                 {pipe.title}
               </div>
-              <div className="text-[10px] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
+              <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
                 {pipe.description}
               </div>
             </button>
@@ -227,7 +227,7 @@ export function SummaryCards({
       {/* User's custom saved templates */}
       {customTemplates.length > 0 && (
         <div className="w-full max-w-lg mb-2">
-          <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-1 px-1">
+          <div className="text-[0.625rem] text-muted-foreground/60 uppercase tracking-wider font-medium mb-1 px-1">
             your templates
           </div>
           <div className="grid grid-cols-3 gap-1.5">
@@ -241,10 +241,10 @@ export function SummaryCards({
                 className="group text-left p-2 border border-border/30 bg-muted/10 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer relative"
               >
                 <div className="text-sm mb-0.5">{"\u{1F4CC}"}</div>
-                <div className="text-[11px] font-medium group-hover:text-background mb-0.5 leading-tight">
+                <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
                   {ct.title}
                 </div>
-                <div className="text-[10px] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
+                <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
                   {ct.description || ct.timeRange}
                 </div>
                 <button
@@ -266,7 +266,7 @@ export function SummaryCards({
       {/* ─── Dynamic AI suggestions ─────────────────────────────────────────── */}
       <div className="w-full max-w-lg">
         <div className="flex items-center gap-1.5 mb-1.5 px-1">
-          <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium font-mono">
+          <div className="text-[0.625rem] text-muted-foreground/60 uppercase tracking-wider font-medium font-mono">
             based on your activity
           </div>
           {onRefreshSuggestions && (
@@ -319,11 +319,11 @@ export function SummaryCards({
                     }`}
                     title={s.text}
                   >
-                    <div className={`text-[11px] leading-tight ${isHero ? "font-medium" : ""} line-clamp-2`}>
+                    <div className={`text-[0.6875rem] leading-tight ${isHero ? "font-medium" : ""} line-clamp-2`}>
                       {s.text}
                     </div>
                     {s.preview && (
-                      <div className="text-[10px] text-muted-foreground/50 group-hover:text-background/50 leading-tight mt-0.5 truncate">
+                      <div className="text-[0.625rem] text-muted-foreground/50 group-hover:text-background/50 leading-tight mt-0.5 truncate">
                         {s.preview}
                       </div>
                     )}
