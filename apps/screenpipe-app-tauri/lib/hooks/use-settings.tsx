@@ -201,7 +201,7 @@ export type Settings = SettingsStore & {
 	 */
 	themeName?: string;
 	/**
-	 * Theme engine — stepped UI scale multiplier (0.9, 1.0, 1.1, 1.25, 1.4).
+	 * Theme engine — bounded UI scale multiplier (0.75 through 1.4).
 	 * Applies to UI chrome only — must NOT affect capture/OCR/media geometry.
 	 */
 	uiScale?: number;

@@ -61,7 +61,7 @@ export interface UIThemeContextValue {
 	themeMode: ThemeMode;
 	/** Resolved mode after collapsing "system" against the OS preference. */
 	resolvedMode: ResolvedMode;
-	/** Current UI scale multiplier (0.9 … 1.4, stepped). */
+	/** Current UI scale multiplier (0.75 … 1.4). */
 	uiScale: UiScale;
 	/** The active ThemeDefinition — exposed for settings previews. */
 	theme: ThemeDefinition;
