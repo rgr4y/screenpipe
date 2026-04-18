@@ -7,7 +7,7 @@
 // The theme engine has three orthogonal concerns:
 //   1. themeName — which named theme is selected (screenpipe, nord, dracula, …)
 //   2. themeMode — light | dark | system
-//   3. uiScale   — stepped app-wide UI density/readability multiplier
+//   3. uiScale   — bounded app-wide UI density/readability multiplier
 //
 // All tokens are HSL triplets ("H S% L%") so they can be consumed as
 // `hsl(var(--token))` inside Tailwind and component styles — preserving the
