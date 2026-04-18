@@ -721,11 +721,11 @@ export function MeetingsSection() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary hover:bg-primary/10"
                         onClick={() => summarizeMeeting(meeting)}
                         title="summarize with AI"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Sparkles className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         size="icon"

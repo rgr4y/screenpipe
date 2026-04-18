@@ -23,6 +23,7 @@ import { usePlatform } from "@/lib/hooks/use-platform";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Settings } from "@/lib/hooks/use-settings";
 import { open } from "@tauri-apps/plugin-shell";
 import { invoke } from "@tauri-apps/api/core";
@@ -39,7 +40,10 @@ import {
 } from "@/lib/theme/registry";
 import type { ThemeName } from "@/lib/theme/types";
 import {
-  UI_SCALE_LADDER,
+  DEFAULT_UI_SCALE,
+  UI_SCALE_MAX,
+  UI_SCALE_MIN,
+  UI_SCALE_STEP,
   formatUiScale,
   type UiScale,
 } from "@/lib/theme/scale";
@@ -61,10 +65,9 @@ export function DisplaySection() {
   // in lib/hooks/use-ui-scale-shortcuts.tsx.
   const modKey = isMac ? "⌘" : "Ctrl";
 
-  const handleSettingsChange = (newSettings: Partial<Settings>) => {
-    if (settings) {
-      updateSettings(newSettings);
-    }
+  const handleSettingsChange = async (newSettings: Partial<Settings>) => {
+    if (!settings) return;
+    await updateSettings(newSettings);
   };
 
   const themeOptions = [
@@ -187,28 +190,22 @@ export function DisplaySection() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2 ml-[26px]">
-                {UI_SCALE_LADDER.map((step) => {
-                  const isActive = uiScale === step;
-                  return (
-                    <button
-                      key={step}
-                      type="button"
-                      onClick={() => setUiScale(step as UiScale)}
-                      className={`flex-1 px-2.5 py-1.5 rounded-md border-2 transition-all text-center cursor-pointer ${
-                        isActive
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-muted-foreground/30"
-                      }`}
-                      aria-pressed={isActive}
-                      aria-label={`Set UI scale to ${formatUiScale(step as UiScale)}`}
-                    >
-                      <div className="font-medium text-xs text-foreground">
-                        {formatUiScale(step as UiScale)}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="ml-[26px] space-y-2">
+                <Slider
+                  aria-label="UI scale"
+                  value={[uiScale]}
+                  onValueChange={([value]) =>
+                    setUiScale((value ?? DEFAULT_UI_SCALE) as UiScale)
+                  }
+                  min={UI_SCALE_MIN}
+                  max={UI_SCALE_MAX}
+                  step={UI_SCALE_STEP}
+                  className="w-full"
+                />
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>{formatUiScale(UI_SCALE_MIN)}</span>
+                  <span>{formatUiScale(UI_SCALE_MAX)}</span>
+                </div>
               </div>
               <p className="text-[11px] text-muted-foreground ml-[26px]">
                 Shortcut: {modKey}+= / {modKey}+- / {modKey}+0
@@ -360,7 +357,7 @@ export function DisplaySection() {
                 id="shortcut-overlay"
                 checked={settings?.showShortcutOverlay ?? false}
                 onCheckedChange={async (checked) => {
-                  handleSettingsChange({ showShortcutOverlay: checked });
+                  await handleSettingsChange({ showShortcutOverlay: checked });
                   try {
                     if (checked) {
                       await invoke("show_shortcut_reminder", { shortcut: settings.showScreenpipeShortcut });
@@ -396,11 +393,9 @@ export function DisplaySection() {
                       <button
                         key={option.value}
                         onClick={async () => {
-                          handleSettingsChange({ shortcutOverlaySize: option.value });
+                          await handleSettingsChange({ shortcutOverlaySize: option.value });
                           try {
                             await invoke("hide_shortcut_reminder");
-                            // Wait for store.bin to flush to disk before re-showing
-                            await new Promise(r => setTimeout(r, 500));
                             await invoke("show_shortcut_reminder", { shortcut: settings.showScreenpipeShortcut });
                           } catch {}
                         }}
