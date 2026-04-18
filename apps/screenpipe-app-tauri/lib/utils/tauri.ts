@@ -1415,7 +1415,7 @@ apiKey?: string }) &
  */
 disableOcr?: boolean; showShortcutOverlay?: boolean; 
 /**
- * Overlay size: "small" (default), "medium" (1.5x), "large" (2x)
+ * Overlay size preset for the shortcut reminder.
  */
 shortcutOverlaySize?: string; 
 /**
