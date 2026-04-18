@@ -195,6 +195,16 @@ export type Settings = SettingsStore & {
 	apiAuth?: boolean;
 	apiKey?: string;
 	encryptStore?: boolean;
+	/**
+	 * Theme engine — selected named theme (e.g. "screenpipe", "nord").
+	 * See lib/theme/registry.ts for valid values. Defaults to "screenpipe".
+	 */
+	themeName?: string;
+	/**
+	 * Theme engine — stepped UI scale multiplier (0.9, 1.0, 1.1, 1.25, 1.4).
+	 * Applies to UI chrome only — must NOT affect capture/OCR/media geometry.
+	 */
+	uiScale?: number;
 }
 
 export function getEffectiveFilters(settings: Settings) {
@@ -348,6 +358,8 @@ let DEFAULT_SETTINGS: Settings = {
 			appendTypedTextToMeetingNotes: true,
 			localRetentionEnabled: true,
 			localRetentionDays: 14,
+			themeName: "screenpipe",
+			uiScale: 1,
 		};
 
 export function createDefaultSettingsObject(): Settings {

@@ -9,6 +9,7 @@ import { useEffect, Suspense } from "react";
 import { ChangelogDialogProvider } from "@/lib/hooks/use-changelog-dialog";
 import { SettingsProvider } from "@/lib/hooks/use-settings";
 import { ThemeProvider } from "@/components/theme-provider";
+import { UiScaleShortcuts } from "@/lib/hooks/use-ui-scale-shortcuts";
 import { PermissionMonitorProvider } from "@/lib/hooks/use-permission-monitor";
 import { AuthGuard } from "@/lib/auth-guard";
 import { forwardRef } from "react";
@@ -113,7 +114,8 @@ export const Providers = forwardRef<
     <NuqsAdapter>
       <SettingsProvider>
         <AuthGuard>
-          <ThemeProvider defaultTheme="system" storageKey="screenpipe-ui-theme">
+          <ThemeProvider defaultThemeMode="system">
+            <UiScaleShortcuts />
             <ChangelogDialogProvider>
               <PermissionMonitorProvider>
                 <PostHogProvider client={posthog}>{children}</PostHogProvider>

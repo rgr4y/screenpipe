@@ -145,7 +145,7 @@ export function NotificationBell() {
         <button className="relative p-1.5 rounded-md hover:bg-muted/60 transition-colors">
           <Bell className="h-3.5 w-3.5 text-muted-foreground" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center rounded-full bg-foreground text-background text-[9px] font-medium px-1">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center rounded-full bg-foreground text-background text-[0.5625rem] font-medium px-1">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -164,7 +164,7 @@ export function NotificationBell() {
           {history.length > 0 && (
             <button
               onClick={clearAll}
-              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              className="text-[0.625rem] text-muted-foreground hover:text-foreground transition-colors"
             >
               clear all
             </button>
@@ -210,12 +210,12 @@ export function NotificationBell() {
                           {!entry.read && (
                             <span className="w-1.5 h-1.5 rounded-full bg-foreground shrink-0" />
                           )}
-                          <span className="text-[11px] font-medium text-foreground truncate">
+                          <span className="text-[0.6875rem] font-medium text-foreground truncate">
                             {entry.title}
                           </span>
                         </div>
                         {!isExpanded && entry.body && (
-                          <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 pl-4 [&_p]:inline [&_strong]:text-foreground [&_a]:underline">
+                          <div className="text-[0.625rem] text-muted-foreground mt-0.5 line-clamp-2 pl-4 [&_p]:inline [&_strong]:text-foreground [&_a]:underline">
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               components={{
@@ -245,7 +245,7 @@ export function NotificationBell() {
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                        <span className="text-[9px] text-muted-foreground/50">
+                        <span className="text-[0.5625rem] text-muted-foreground/50">
                           {formatTime(entry.timestamp)}
                         </span>
                         <button
@@ -264,7 +264,7 @@ export function NotificationBell() {
                   {isExpanded && (
                     <div className="px-3 pb-2 pl-7">
                       {entry.body && (
-                        <div className="text-[10px] text-muted-foreground leading-relaxed mb-2 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_strong]:text-foreground [&_code]:bg-muted [&_code]:px-1 [&_code]:text-[9px] [&_ul]:pl-4 [&_ul]:my-0.5 [&_li]:my-0">
+                        <div className="text-[0.625rem] text-muted-foreground leading-relaxed mb-2 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_strong]:text-foreground [&_code]:bg-muted [&_code]:px-1 [&_code]:text-[0.5625rem] [&_ul]:pl-4 [&_ul]:my-0.5 [&_li]:my-0">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
@@ -291,7 +291,7 @@ export function NotificationBell() {
                         </div>
                       )}
                       {entry.pipe_name && (
-                        <span className="text-[9px] text-muted-foreground/60 block mb-2">
+                        <span className="text-[0.5625rem] text-muted-foreground/60 block mb-2">
                           {entry.pipe_name}
                         </span>
                       )}
@@ -311,7 +311,7 @@ export function NotificationBell() {
                             source: `notification-bell-${entry.id}`,
                           });
                         }}
-                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center gap-1 text-[0.625rem] text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <MessageSquare className="w-3 h-3" />
                         ask ai about this
@@ -331,7 +331,7 @@ export function NotificationBell() {
               setOpen(false);
               openSettingsWindow("notifications");
             }}
-            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            className="text-[0.625rem] text-muted-foreground hover:text-foreground transition-colors"
           >
             ⚙ manage notification settings
           </button>

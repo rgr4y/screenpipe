@@ -369,7 +369,7 @@ function GridDissolveLoader({
           />
         ))}
       </div>
-      <span className="text-[11px] font-mono text-muted-foreground tracking-wide">
+      <span className="text-[0.6875rem] font-mono text-muted-foreground tracking-wide">
         {displayLabel}{tokenLabel && <span className="ml-1.5 opacity-60">· {tokenLabel}</span>}
       </span>
     </div>
@@ -455,7 +455,7 @@ function ToolCallRailItem({ toolCall, isLast }: { toolCall: ToolCall; isLast: bo
             />
           ) : toolCall.isError ? (
             // X mark for error
-            <span className="text-[10px] font-mono font-bold text-foreground leading-none">✗</span>
+            <span className="text-[0.625rem] font-mono font-bold text-foreground leading-none">✗</span>
           ) : (
             // Solid dot for success
             <motion.div
@@ -481,7 +481,7 @@ function ToolCallRailItem({ toolCall, isLast }: { toolCall: ToolCall; isLast: bo
           <span className="truncate flex-1 text-xs font-mono text-foreground/70 group-hover:text-foreground transition-colors duration-150">
             {label}
           </span>
-          <span className="text-foreground/30 flex-shrink-0 text-[10px] font-mono group-hover:text-foreground/60 transition-colors duration-150">
+          <span className="text-foreground/30 flex-shrink-0 text-[0.625rem] font-mono group-hover:text-foreground/60 transition-colors duration-150">
             {expanded ? "−" : "+"}
           </span>
         </button>
@@ -542,7 +542,7 @@ function ThinkingBlock({ text, isThinking, durationMs }: { text: string; isThink
       </button>
       {expanded && text.trim() && (
         <div className="px-3 py-2 border-t border-border/30">
-          <div className="pl-3 border-l-2 border-border/40 text-muted-foreground font-mono whitespace-pre-wrap break-words max-h-[300px] overflow-y-auto text-[11px] leading-relaxed">
+          <div className="pl-3 border-l-2 border-border/40 text-muted-foreground font-mono whitespace-pre-wrap break-words max-h-[300px] overflow-y-auto text-[0.6875rem] leading-relaxed">
             {text}
           </div>
         </div>
@@ -582,7 +582,7 @@ function AppIcon({ name }: { name: string }) {
     <div className="w-5 h-5 rounded-sm flex-shrink-0 flex items-center justify-center overflow-hidden">
       {iconFailed ? (
         <span
-          className="w-full h-full flex items-center justify-center text-[10px] font-semibold text-white rounded-sm"
+          className="w-full h-full flex items-center justify-center text-[0.625rem] font-semibold text-white rounded-sm"
           style={{ backgroundColor: color }}
         >
           {name.charAt(0).toUpperCase()}
@@ -915,7 +915,7 @@ function ToolCallGroup({ toolCalls }: { toolCalls: ToolCall[] }) {
         </span>
 
         {/* Expand chevron */}
-        <span className="flex-shrink-0 text-[10px] font-mono text-foreground/30 group-hover:text-foreground/60 transition-colors duration-150">
+        <span className="flex-shrink-0 text-[0.625rem] font-mono text-foreground/30 group-hover:text-foreground/60 transition-colors duration-150">
           {isExpanded ? "▾" : "▸"}
         </span>
       </button>
@@ -3137,7 +3137,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
         </div>
         <div className="flex-1">
           <h2 className="font-semibold text-sm tracking-tight">Pipe AI</h2>
-          <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Screen Activity Assistant</p>
+          <p className="text-[0.625rem] text-muted-foreground font-mono uppercase tracking-wider">Screen Activity Assistant</p>
         </div>
         <Button
           variant="default"
@@ -3155,7 +3155,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
           <Plus size={14} />
           <span>New</span>
         </Button>
-        <kbd suppressHydrationWarning className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono text-muted-foreground bg-muted/50 border border-border/50 rounded">
+        <kbd suppressHydrationWarning className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-mono text-muted-foreground bg-muted/50 border border-border/50 rounded">
           {formatShortcutDisplay(settings.showChatShortcut || (isMac ? "Control+Super+L" : "Alt+L"), isMac)}
         </kbd>
       </div>
@@ -3209,7 +3209,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                 ) : (
                   groupedConversations.map((group) => (
                     <div key={group.label} className="space-y-1">
-                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-2 py-1">
+                      <p className="text-[0.625rem] font-medium text-muted-foreground uppercase tracking-wider px-2 py-1">
                         {group.label}
                       </p>
                       {group.conversations.map((conv) => (
@@ -3227,7 +3227,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                             <p className="text-xs font-medium truncate">
                               {conv.title}
                             </p>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-[0.625rem] text-muted-foreground">
                               {conv.messages.length} messages
                             </p>
                           </div>
@@ -3607,7 +3607,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
               )}
               {prefillContext && (
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                  <div className="text-[0.625rem] font-medium text-muted-foreground uppercase tracking-wider mb-1">
                     context from {prefillSource === "timeline" ? "timeline selection" : "search"}
                   </div>
                   <p className="text-xs text-foreground font-mono line-clamp-2">
@@ -3637,7 +3637,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                 key={`time-${idx}`}
                 type="button"
                 onClick={() => removeFilter("time", range.label)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-full hover:bg-blue-500/20 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-full hover:bg-blue-500/20 transition-colors"
               >
                 <span>🕐</span>
                 <span>{range.label}</span>
@@ -3648,7 +3648,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
               <button
                 type="button"
                 onClick={() => removeFilter("content")}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 rounded-full hover:bg-purple-500/20 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 rounded-full hover:bg-purple-500/20 transition-colors"
               >
                 <span>{activeFilters.contentType === "audio" ? "🎤" : "🖥️"}</span>
                 <span>{activeFilters.contentType}</span>
@@ -3659,7 +3659,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
               <button
                 type="button"
                 onClick={() => removeFilter("app")}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 rounded-full hover:bg-green-500/20 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 rounded-full hover:bg-green-500/20 transition-colors"
               >
                 <span>📱</span>
                 <span>{activeFilters.appName}</span>
@@ -3670,7 +3670,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
               <button
                 type="button"
                 onClick={() => removeFilter("speaker")}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 rounded-full hover:bg-orange-500/20 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-medium bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 rounded-full hover:bg-orange-500/20 transition-colors"
               >
                 <span>👤</span>
                 <span>{activeFilters.speakerName}</span>
@@ -3690,14 +3690,14 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
               transition={{ duration: 0.2 }}
               className="px-3 pt-2 flex flex-col gap-1"
             >
-              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">follow up</span>
+              <span className="text-[0.625rem] text-muted-foreground/60 uppercase tracking-wider font-medium">follow up</span>
               <div className="flex flex-wrap gap-1.5">
                 {followUpSuggestions.map((q, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => sendMessage(q)}
-                    className="px-2.5 py-1 text-[11px] bg-primary/10 hover:bg-primary/20 rounded-full border border-primary/20 hover:border-primary/40 text-primary hover:text-primary transition-colors cursor-pointer"
+                    className="px-2.5 py-1 text-[0.6875rem] bg-primary/10 hover:bg-primary/20 rounded-full border border-primary/20 hover:border-primary/40 text-primary hover:text-primary transition-colors cursor-pointer"
                   >
                     {q}
                   </button>
@@ -3715,7 +3715,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                 key={i}
                 type="button"
                 onClick={() => sendMessage(s.text)}
-                className="px-2.5 py-1 text-[11px] font-mono bg-muted/20 hover:bg-foreground hover:text-background border border-border/20 hover:border-foreground text-muted-foreground transition-all duration-150 cursor-pointer max-w-[280px] truncate"
+                className="px-2.5 py-1 text-[0.6875rem] font-mono bg-muted/20 hover:bg-foreground hover:text-background border border-border/20 hover:border-foreground text-muted-foreground transition-all duration-150 cursor-pointer max-w-[280px] truncate"
                 title={s.preview ? `${s.text} — ${s.preview}` : s.text}
               >
                 {s.text}
@@ -3767,7 +3767,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
               <button
                 type="button"
                 className={cn(
-                  "shrink-0 flex items-center gap-1 px-2 h-10 text-[11px] font-mono border rounded-md transition-colors",
+                  "shrink-0 flex items-center gap-1 px-2 h-10 text-[0.6875rem] font-mono border rounded-md transition-colors",
                   hasActiveFilters
                     ? "border-foreground text-foreground"
                     : "border-border text-muted-foreground hover:text-foreground hover:border-foreground"
@@ -3777,7 +3777,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                 <Filter className="w-3 h-3" />
                 <span>filter</span>
                 {hasActiveFilters && (
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[0.625rem] text-muted-foreground">
                     ({(activeFilters.timeRanges.length > 0 ? 1 : 0) +
                       (activeFilters.contentType ? 1 : 0) +
                       (activeFilters.appName ? 1 : 0) +
@@ -3788,7 +3788,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
             </PopoverTrigger>
             <PopoverContent className="w-64 p-0 max-h-[360px] overflow-y-auto" align="start">
               {/* Time filters */}
-              <div className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50">
+              <div className="px-2 py-1 text-[0.625rem] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50">
                 time
               </div>
               {STATIC_MENTION_SUGGESTIONS.filter((s) => s.category === "time").map((s) => {
@@ -3811,13 +3811,13 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                     )}
                   >
                     <span>{s.tag}</span>
-                    <span className="text-[10px] text-muted-foreground">{s.description}</span>
+                    <span className="text-[0.625rem] text-muted-foreground">{s.description}</span>
                   </button>
                 );
               })}
 
               {/* Content type filters */}
-              <div className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50 border-t">
+              <div className="px-2 py-1 text-[0.625rem] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50 border-t">
                 content type
               </div>
               {STATIC_MENTION_SUGGESTIONS.filter((s) => s.category === "content").map((s) => {
@@ -3843,17 +3843,17 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                     )}
                   >
                     <span>{s.tag}</span>
-                    <span className="text-[10px] text-muted-foreground">{s.description}</span>
+                    <span className="text-[0.625rem] text-muted-foreground">{s.description}</span>
                   </button>
                 );
               })}
 
               {/* App filters */}
-              <div className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50 border-t">
+              <div className="px-2 py-1 text-[0.625rem] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50 border-t">
                 apps
               </div>
               {appMentionSuggestions.length === 0 ? (
-                <div className="px-3 py-2 text-[10px] text-muted-foreground">no apps detected yet</div>
+                <div className="px-3 py-2 text-[0.625rem] text-muted-foreground">no apps detected yet</div>
               ) : (
                 appMentionSuggestions.map((suggestion) => {
                   const isActive = activeFilters.appName === suggestion.appName;
@@ -3876,7 +3876,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                       )}
                     >
                       <span>{suggestion.tag}</span>
-                      <span className="text-[10px] text-muted-foreground truncate">{suggestion.description}</span>
+                      <span className="text-[0.625rem] text-muted-foreground truncate">{suggestion.description}</span>
                     </button>
                   );
                 })
@@ -3885,7 +3885,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
               {/* Speakers */}
               {recentSpeakers.length > 0 && (
                 <>
-                  <div className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50 border-t">
+                  <div className="px-2 py-1 text-[0.625rem] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50 border-t">
                     speakers
                   </div>
                   {recentSpeakers.map((s) => {
@@ -3910,7 +3910,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                         )}
                       >
                         <span>{s.tag}</span>
-                        <span className="text-[10px] text-muted-foreground">speaker</span>
+                        <span className="text-[0.625rem] text-muted-foreground">speaker</span>
                       </button>
                     );
                   })}
@@ -4000,7 +4000,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                       if (items.length === 0) return null;
                       return (
                         <div key={category}>
-                          <div className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50">
+                          <div className="px-2 py-1 text-[0.625rem] font-medium uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50">
                             {category === "time" ? "time" : category === "content" ? "content type" : category === "speaker" ? "speakers" : "apps"}
                           </div>
                           {items.map((suggestion) => {
@@ -4018,7 +4018,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                                 )}
                               >
                                 <span className="font-mono text-xs">{suggestion.tag}</span>
-                                <span className="text-[10px] text-muted-foreground truncate">{suggestion.description}</span>
+                                <span className="text-[0.625rem] text-muted-foreground truncate">{suggestion.description}</span>
                               </button>
                             );
                           })}
@@ -4026,7 +4026,7 @@ export function StandaloneChat({ className }: { className?: string } = {}) {
                       );
                     })}
                     {isLoadingSpeakers && (
-                      <div className="px-3 py-2 text-[10px] text-muted-foreground flex items-center gap-2">
+                      <div className="px-3 py-2 text-[0.625rem] text-muted-foreground flex items-center gap-2">
                         <Loader2 className="h-3 w-3 animate-spin" />
                         <span>Searching speakers...</span>
                       </div>

@@ -363,7 +363,7 @@ function HomeContent() {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">
-                    {sidebarCollapsed ? "expand sidebar" : "collapse sidebar"} <kbd className="ml-1 px-1 py-0.5 bg-muted rounded text-[10px]">⌘B</kbd>
+                    {sidebarCollapsed ? "expand sidebar" : "collapse sidebar"} <kbd className="ml-1 px-1 py-0.5 bg-muted rounded text-[0.625rem]">⌘B</kbd>
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -417,7 +417,7 @@ function HomeContent() {
                               style={{ opacity }}
                             />
                             {count > 1 && (
-                              <span className={cn("text-[9px] font-medium leading-none", isTranslucent ? "vibrant-sidebar-fg-muted" : "text-foreground/50")}>{count}</span>
+                              <span className={cn("text-[0.5625rem] font-medium leading-none", isTranslucent ? "vibrant-sidebar-fg-muted" : "text-foreground/50")}>{count}</span>
                             )}
                           </button>
                         </TooltipTrigger>
