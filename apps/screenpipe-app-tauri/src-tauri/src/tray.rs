@@ -796,6 +796,9 @@ fn handle_menu_event(app_handle: &AppHandle, event: tauri::menu::MenuEvent) {
                 if is_enterprise_build(&app) {
                     return;
                 }
+                if crate::updates::are_updates_disabled(&app) {
+                    return;
+                }
                 // For source builds, show info dialog about updates
                 if is_source_build(&app) {
                     tauri::async_runtime::spawn(async move {

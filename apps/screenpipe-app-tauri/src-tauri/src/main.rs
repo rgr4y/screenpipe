@@ -1012,7 +1012,9 @@ async fn main() {
                 let mut app_submenu_builder = SubmenuBuilder::new(app, "screenpipe")
                     .item(&PredefinedMenuItem::about(app, Some("About screenpipe"), None)?)
                     .separator();
-                if !crate::updates::is_enterprise_build(&app_handle) {
+                if !crate::updates::is_enterprise_build(&app_handle)
+                    && !crate::updates::are_updates_disabled(&app_handle)
+                {
                     app_submenu_builder = app_submenu_builder
                         .item(&MenuItemBuilder::with_id("check_for_updates", "Check for Updates...")
                             .build(app)?)

@@ -79,14 +79,18 @@ pub fn setup_dock_menu(app_handle: AppHandle) {
                 let _: () = msg_send![item, setTarget: _this];
                 let _: () = msg_send![menu, addItem: item];
 
-                // "Check for updates"
-                let title = NSString::alloc(nil).init_str("Check for updates");
-                let action = sel!(checkUpdates:);
-                let key = NSString::alloc(nil).init_str("");
-                let item: id = msg_send![class!(NSMenuItem), alloc];
-                let item: id = msg_send![item, initWithTitle:title action:action keyEquivalent:key];
-                let _: () = msg_send![item, setTarget: _this];
-                let _: () = msg_send![menu, addItem: item];
+                if let Some(app) = DOCK_APP_HANDLE.get() {
+                    if !crate::updates::are_updates_disabled(app) {
+                        // "Check for updates"
+                        let title = NSString::alloc(nil).init_str("Check for updates");
+                        let action = sel!(checkUpdates:);
+                        let key = NSString::alloc(nil).init_str("");
+                        let item: id = msg_send![class!(NSMenuItem), alloc];
+                        let item: id = msg_send![item, initWithTitle:title action:action keyEquivalent:key];
+                        let _: () = msg_send![item, setTarget: _this];
+                        let _: () = msg_send![menu, addItem: item];
+                    }
+                }
 
                 // Note: macOS adds native "Quit" to dock menu automatically
                 menu

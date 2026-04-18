@@ -1223,20 +1223,21 @@ pub async fn show_shortcut_reminder(
         }
     }
 
-    // Window dimensions: 2-row grid (3 shortcuts + activity viz)
-    // Scale based on overlay size setting
+    // Window dimensions: use a readable 100% baseline. The previous implementation
+    // started from a tiny 160x40 frame and then scaled it, which made the default
+    // preset look like a half-sized debug overlay instead of production UI.
     let scale = match crate::store::SettingsStore::get(&app_handle)
         .unwrap_or_default()
         .unwrap_or_default()
         .shortcut_overlay_size
         .as_str()
     {
-        "large" => 2.0_f64,
-        "medium" => 1.5,
+        "large" => 1.36_f64,
+        "medium" => 1.18,
         _ => 1.0,
     };
-    let window_width = 160.0 * scale;
-    let window_height = 40.0 * scale;
+    let window_width = 380.0 * scale;
+    let window_height = 68.0 * scale;
 
     // Position at top center of the screen where the cursor is
     let (x, y) = {
@@ -1416,7 +1417,7 @@ pub async fn show_shortcut_reminder(
             if let Ok(Some(monitor)) = app_handle_clone.primary_monitor() {
                 let screen_size = monitor.size();
                 let scale_factor = monitor.scale_factor();
-                let new_x = ((screen_size.width as f64 / scale_factor) - 220.0) / 2.0;
+                let new_x = ((screen_size.width as f64 / scale_factor) - window_width) / 2.0;
                 let new_y = 12.0;
 
                 if let Some(window) = app_handle_clone.get_webview_window("shortcut-reminder") {

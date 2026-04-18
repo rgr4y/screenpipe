@@ -414,7 +414,7 @@ pub struct SettingsStore {
     pub disable_ocr: bool,
     #[serde(rename = "showShortcutOverlay", default = "default_true")]
     pub show_shortcut_overlay: bool,
-    /// Overlay size: "small" (default), "medium" (1.5x), "large" (2x)
+    /// Overlay size preset for the shortcut reminder.
     #[serde(rename = "shortcutOverlaySize", default = "default_overlay_size")]
     pub shortcut_overlay_size: String,
     /// Unique device ID for AI usage tracking (generated on first launch)

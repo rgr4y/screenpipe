@@ -120,6 +120,23 @@ pub fn is_enterprise_build(_app: &tauri::AppHandle) -> bool {
     cfg!(feature = "enterprise-build")
 }
 
+/// True when app update checks/UI should be disabled for development workflows.
+pub fn are_updates_disabled(app: &tauri::AppHandle) -> bool {
+    if let Ok(Some(settings)) = SettingsStore::get(app) {
+        if settings.dev_mode {
+            return true;
+        }
+    }
+
+    if let Ok(val) = std::env::var("TAURI_ENV_DEBUG") {
+        if val == "true" {
+            return true;
+        }
+    }
+
+    cfg!(debug_assertions)
+}
+
 pub struct UpdatesManager {
     interval: Duration,
     update_available: Arc<Mutex<bool>>,
@@ -133,7 +150,10 @@ pub struct UpdatesManager {
 
 impl UpdatesManager {
     pub fn new(app: &tauri::AppHandle, interval_minutes: u64) -> Result<Self, Error> {
-        let update_menu_item = if is_enterprise_build(app) || option_env!("ROB_MODE") == Some("1") {
+        let update_menu_item = if is_enterprise_build(app)
+            || option_env!("ROB_MODE") == Some("1")
+            || are_updates_disabled(app)
+        {
             None
         } else {
             let (menu_text, enabled) = if is_source_build(app) {
@@ -191,6 +211,13 @@ impl UpdatesManager {
             return Result::Ok(false);
         }
 
+        if let Ok(Some(settings)) = SettingsStore::get(&self.app) {
+            if settings.dev_mode {
+                info!("dev mode is enabled in settings, skipping update check");
+                return Result::Ok(false);
+            }
+        }
+
         // Handle source/community builds
         if is_source_build(&self.app) {
             debug!("source build detected, auto-updates not available");
@@ -200,13 +227,7 @@ impl UpdatesManager {
             return Result::Ok(false);
         }
 
-        if let Ok(val) = std::env::var("TAURI_ENV_DEBUG") {
-            if val == "true" {
-                info!("dev mode is enabled, skipping update check");
-                return Result::Ok(false);
-            }
-        }
-        if cfg!(debug_assertions) {
+        if are_updates_disabled(&self.app) {
             info!("dev mode is enabled, skipping update check");
             return Result::Ok(false);
         }
