@@ -65,18 +65,20 @@ export function NotificationsSettings() {
         </div>
 
         {/* App updates */}
-        <div className="flex items-center justify-between py-3 border-b border-border">
-          <div>
-            <p className="text-sm font-medium">App updates</p>
-            <p className="text-xs text-muted-foreground">
-              New version available
-            </p>
+        {!settings.devMode && (
+          <div className="flex items-center justify-between py-3 border-b border-border">
+            <div>
+              <p className="text-sm font-medium">App updates</p>
+              <p className="text-xs text-muted-foreground">
+                New version available
+              </p>
+            </div>
+            <Switch
+              checked={prefs.appUpdates ?? true}
+              onCheckedChange={(v) => updatePref("appUpdates", v)}
+            />
           </div>
-          <Switch
-            checked={prefs.appUpdates ?? true}
-            onCheckedChange={(v) => updatePref("appUpdates", v)}
-          />
-        </div>
+        )}
 
         {/* Pipe suggestions */}
         <div className="flex items-center justify-between py-3 border-b border-border">

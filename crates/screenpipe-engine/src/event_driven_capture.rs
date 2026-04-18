@@ -89,6 +89,8 @@ impl CaptureTrigger {
 pub struct EventDrivenCaptureConfig {
     /// Minimum time between captures (debounce), in milliseconds.
     pub min_capture_interval_ms: u64,
+    /// User-configured minimum interval. Power profiles may only throttle upward.
+    pub user_min_capture_interval_ms: u64,
     /// Maximum time without a capture before taking an idle snapshot.
     pub idle_capture_interval_ms: u64,
     /// How long after typing stops to take a typing_pause capture.
@@ -112,6 +114,7 @@ impl Default for EventDrivenCaptureConfig {
     fn default() -> Self {
         Self {
             min_capture_interval_ms: 200,
+            user_min_capture_interval_ms: 200,
             idle_capture_interval_ms: 30_000, // 30 seconds
             typing_pause_delay_ms: 500,
             scroll_stop_delay_ms: 300,
@@ -403,7 +406,10 @@ pub async fn event_driven_capture_loop(
                     "applying power profile {:?} to monitor {}",
                     profile.name, monitor_id
                 );
-                state.config.min_capture_interval_ms = profile.min_capture_interval_ms;
+                state.config.min_capture_interval_ms = state
+                    .config
+                    .user_min_capture_interval_ms
+                    .max(profile.min_capture_interval_ms);
                 state.config.idle_capture_interval_ms = profile.idle_capture_interval_ms;
                 state.config.jpeg_quality = profile.jpeg_quality;
                 snapshot_writer.set_quality(profile.jpeg_quality);
@@ -1367,6 +1373,7 @@ mod tests {
     fn test_default_config() {
         let config = EventDrivenCaptureConfig::default();
         assert_eq!(config.min_capture_interval_ms, 200);
+        assert_eq!(config.user_min_capture_interval_ms, 200);
         assert_eq!(config.idle_capture_interval_ms, 30_000);
         assert_eq!(config.typing_pause_delay_ms, 500);
         assert_eq!(config.jpeg_quality, 80);
@@ -1374,6 +1381,28 @@ mod tests {
         assert!(config.capture_on_clipboard);
         assert_eq!(config.visual_check_interval_ms, 3_000);
         assert!((config.visual_change_threshold - 0.05).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_power_profile_never_beats_user_min_interval() {
+        let mut config = EventDrivenCaptureConfig {
+            min_capture_interval_ms: 800,
+            user_min_capture_interval_ms: 800,
+            ..Default::default()
+        };
+
+        let balanced = PowerProfile::balanced();
+        config.min_capture_interval_ms = config
+            .user_min_capture_interval_ms
+            .max(balanced.min_capture_interval_ms);
+        assert_eq!(config.min_capture_interval_ms, 800);
+
+        let saver = PowerProfile::saver();
+        config.user_min_capture_interval_ms = 200;
+        config.min_capture_interval_ms = config
+            .user_min_capture_interval_ms
+            .max(saver.min_capture_interval_ms);
+        assert_eq!(config.min_capture_interval_ms, 1_000);
     }
 
     #[test]

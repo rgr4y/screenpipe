@@ -21,4 +21,5 @@ CMAKE_POLICY_VERSION_MINIMUM = "3.5"
 
 # Faster builds - use more threads for codegen
 [build]
+rustflags = ["-Aclippy::all"]
 jobs = 16  # Parallel compilation jobs (adjust to your CPU cores)

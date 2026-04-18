@@ -31,9 +31,9 @@ private enum Brand {
     static func swiftUIMonoFont(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         let name: String
         switch weight {
-        case .medium: name = "IBMPlexMono-Medium"
-        case .semibold, .bold: name = "IBMPlexMono-SemiBold"
-        default: name = "IBMPlexMono"
+        case .medium: name = "JetBrainsMono-Medium"
+        case .semibold, .bold: name = "JetBrainsMono-Medium"
+        default: name = "JetBrainsMono-Regular"
         }
         if NSFont(name: name, size: size) != nil {
             return Font.custom(name, fixedSize: size)
@@ -349,7 +349,7 @@ private func loadOverlayScale() {
           let settings = json["settings"] as? [String: Any],
           let size = settings["shortcutOverlaySize"] as? String else { return }
     switch size {
-    case "large": gOverlayScale = 1.36
+    case "large": gOverlayScale = 2
     case "medium": gOverlayScale = 1.18
     default: gOverlayScale = 1.0
     }

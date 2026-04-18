@@ -44,6 +44,7 @@ import {
   Shield,
   Zap,
   Music,
+  Video,
   User,
   Users,
   ChevronUp,
@@ -209,6 +210,14 @@ const getAudioDeviceIcon = (name: string) => {
   }
   if (getAudioDeviceType(name) === "input") return Mic;
   return Volume2;
+};
+
+const formatCaptureInterval = (intervalMs: number): string => {
+  if (intervalMs < 1000) {
+    return `${(intervalMs / 1000).toFixed(1)}s`;
+  }
+  const seconds = intervalMs / 1000;
+  return Number.isInteger(seconds) ? `${seconds}s` : `${seconds.toFixed(1)}s`;
 };
 
 // ─── Transcription Dictionary ────────────────────────────────────────────────
@@ -1655,7 +1664,7 @@ Your screen is a pipe. Everything you see, hear, and type flows through it. Scre
                 className={cn(
                   "relative rounded-lg border cursor-pointer transition-all overflow-hidden",
                   isSelected
-                    ? "border-foreground bg-foreground/5"
+                    ? "border-primary bg-primary/5"
                     : "border-border opacity-70 hover:opacity-100 hover:bg-accent/50"
                 )}
                 onClick={() => handleAudioDeviceChange(device.name)}
@@ -1827,6 +1836,70 @@ Your screen is a pipe. Everything you see, hear, and type flows through it. Scre
             </div>
           </CardContent>
         </Card>
+
+        {!settings.disableVision && (
+          <Card className="border-border bg-card">
+            <CardContent className="px-3 py-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                      Compact screenshots into video
+                      <HelpTooltip text="When enabled, older screenshots are compressed into MP4 chunks to save space. Turn this off to keep timeline media as screenshots only." />
+                    </h3>
+                    <p className="text-xs text-muted-foreground">Save disk space by converting older screenshots into video chunks</p>
+                  </div>
+                </div>
+                <Switch
+                  id="enableVideoCompaction"
+                  checked={settings.enableVideoCompaction ?? true}
+                  onCheckedChange={(checked) =>
+                    handleSettingsChange({ enableVideoCompaction: checked }, true)
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!settings.disableVision && (
+          <Card className="border-border bg-card">
+            <CardContent className="px-3 py-2.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center space-x-2.5">
+                  <Monitor className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                      Minimum screenshot interval
+                      <HelpTooltip text="Minimum time between screenshots after activity or visual changes. Lower values capture more often but use more CPU, disk, and battery." />
+                    </h3>
+                    <p className="text-xs text-muted-foreground">Control how often screenpipe is allowed to save screenshots</p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-foreground">
+                  {formatCaptureInterval(settings.minCaptureIntervalMs ?? 200)}
+                </span>
+              </div>
+              <div className="ml-[26px] space-y-1.5">
+                <Slider
+                  value={[settings.minCaptureIntervalMs ?? 200]}
+                  onValueChange={([value]) =>
+                    handleSettingsChange({ minCaptureIntervalMs: value ?? 200 }, true)
+                  }
+                  min={200}
+                  max={5000}
+                  step={100}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+                  <span>0.2s</span>
+                  <span>5s</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Use All Monitors - right below disable screen recording */}
         {!settings.disableVision && (

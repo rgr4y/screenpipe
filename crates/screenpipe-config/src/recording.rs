@@ -121,6 +121,18 @@ pub struct RecordingSettings {
     #[serde(rename = "useAllMonitors")]
     pub use_all_monitors: bool,
 
+    /// When true, older screenshots are compacted into MP4 video chunks.
+    #[serde(rename = "enableVideoCompaction", default = "default_true")]
+    pub enable_video_compaction: bool,
+
+    /// Minimum time between screenshots after activity or visual changes.
+    /// Stored in milliseconds and clamped by the engine to a safe range.
+    #[serde(
+        rename = "minCaptureIntervalMs",
+        default = "default_min_capture_interval_ms"
+    )]
+    pub min_capture_interval_ms: u64,
+
     /// Video quality preset: "low", "balanced", "high", "max".
     #[serde(rename = "videoQuality")]
     pub video_quality: String,
@@ -321,6 +333,8 @@ impl Default for RecordingSettings {
             disable_vision: false,
             monitor_ids: vec![],
             use_all_monitors: true,
+            enable_video_compaction: true,
+            min_capture_interval_ms: default_min_capture_interval_ms(),
             video_quality: "balanced".to_string(),
             max_snapshot_width: default_max_snapshot_width(),
             ignored_windows: vec![],
@@ -366,6 +380,10 @@ fn default_max_snapshot_width() -> u32 {
     1920
 }
 
+fn default_min_capture_interval_ms() -> u64 {
+    200
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -386,6 +404,8 @@ mod tests {
         assert_eq!(settings.video_quality, "balanced");
         assert!(settings.use_system_default_audio);
         assert!(settings.ignore_incognito_windows);
+        assert!(settings.enable_video_compaction);
+        assert_eq!(settings.min_capture_interval_ms, 200);
     }
 
     #[test]
@@ -483,6 +503,8 @@ mod tests {
         assert_eq!(settings.transcription_mode, "batch"); // default, wasn't in JSON
         assert_eq!(settings.power_mode, None); // default
         assert!(settings.vocabulary.is_empty()); // default
+        assert!(settings.enable_video_compaction);
+        assert_eq!(settings.min_capture_interval_ms, 200);
     }
 
     #[test]

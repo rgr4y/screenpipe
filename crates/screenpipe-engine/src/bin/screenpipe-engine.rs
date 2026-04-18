@@ -42,7 +42,7 @@ use serde_json::json;
 use std::{
     env, fs,
     net::SocketAddr,
-    net::{IpAddr, Ipv4Addr},
+    net::IpAddr,
     ops::Deref,
     path::PathBuf,
     sync::Arc,
@@ -804,13 +804,17 @@ async fn main() -> anyhow::Result<()> {
     let power_manager = start_power_manager();
 
     // Start background snapshot compaction (JPEG → MP4)
-    screenpipe_engine::start_snapshot_compaction(
-        db.clone(),
-        config.video_quality.clone(),
-        shutdown_tx.subscribe(),
-        power_manager.clone(),
-        Some(hot_frame_cache.clone()),
-    );
+    if config.enable_video_compaction {
+        screenpipe_engine::start_snapshot_compaction(
+            db.clone(),
+            config.video_quality.clone(),
+            shutdown_tx.subscribe(),
+            power_manager.clone(),
+            Some(hot_frame_cache.clone()),
+        );
+    } else {
+        info!("snapshot compaction disabled by settings");
+    }
 
     // Create VisionManager for event-driven capture on all monitors
     let (handle, capture_trigger_tx) = if !config.disable_vision {

@@ -4,6 +4,7 @@
 
 import { useSettings } from "@/lib/hooks/use-settings";
 import { useMemo, useState, useEffect, useCallback } from "react";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import {
   Command,
   CommandEmpty,
@@ -288,7 +289,7 @@ export function AIProviderConfig({
   const fetchOpenAIModels = async (baseUrl: string, apiKey: string) => {
     setIsLoadingModels(true);
     try {
-      const response = await fetch(`${baseUrl}/models`, {
+      const response = await tauriFetch(`${baseUrl}/models`, {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
@@ -312,7 +313,7 @@ export function AIProviderConfig({
   const fetchOllamaModels = async (baseUrl: string) => {
     setIsLoadingModels(true);
     try {
-      const response = await fetch(`${baseUrl}/models`);
+      const response = await tauriFetch(`${baseUrl}/models`);
 
       if (!response.ok) {
         throw new Error("failed to fetch ollama models");
@@ -855,7 +856,7 @@ export function AIProviderConfig({
           <div className="space-y-1.5">
             {selectedProvider !== "screenpipe-cloud" && (
             <div className="space-y-1">
-              <Label htmlFor="maxTokens" className="text-xs">max output tokens</Label>
+              <Label htmlFor="maxTokens" className="text-sm">max output tokens</Label>
               <Input
                 id="maxTokens"
                 type="number"
@@ -866,12 +867,12 @@ export function AIProviderConfig({
                 onChange={(e) =>
                   setFormData({ ...formData, maxTokens: parseInt(e.target.value) || 4096 } as any)
                 }
-                className="h-6 text-[10px]"
+                className="h-8 font-mono text-sm"
               />
             </div>
             )}
             <div className="space-y-1">
-              <Label htmlFor="prompt" className="text-xs">prompt</Label>
+              <Label htmlFor="prompt" className="text-sm">prompt</Label>
               <Textarea
                 id="prompt"
                 value={formData.prompt || DEFAULT_PROMPT}
@@ -879,7 +880,7 @@ export function AIProviderConfig({
                   setFormData({ ...formData, prompt: e.target.value })
                 }
                 placeholder="enter your custom prompt here"
-                className="min-h-[60px] max-h-[100px] text-xs resize-none"
+                className="min-h-28 resize-y font-mono text-sm leading-6 transition-[min-height] duration-150 ease-out focus:min-h-52"
               />
             </div>
           </div>

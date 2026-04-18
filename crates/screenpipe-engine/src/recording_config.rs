@@ -76,6 +76,13 @@ pub struct RecordingConfig {
     pub user_name: Option<String>,
 
     // Video
+    /// When true, older screenshots are compacted into MP4 chunks.
+    pub enable_video_compaction: bool,
+
+    /// User-configured minimum time between screenshots after activity/visual changes.
+    /// Stored in milliseconds and clamped to a safe range.
+    pub min_capture_interval_ms: u64,
+
     /// Video quality preset controlling JPEG quality during frame extraction.
     /// Values: "low", "balanced", "high", "max". Default: "balanced".
     pub video_quality: String,
@@ -192,6 +199,8 @@ impl RecordingConfig {
             openai_compatible_headers: settings.openai_compatible_headers.clone(),
             openai_compatible_raw_audio: settings.openai_compatible_raw_audio,
             user_name: settings.user_name.clone(),
+            enable_video_compaction: settings.enable_video_compaction,
+            min_capture_interval_ms: settings.min_capture_interval_ms.clamp(200, 5_000),
             video_quality: settings.video_quality.clone(),
             use_chinese_mirror: settings.use_chinese_mirror,
             analytics_enabled: settings.analytics_enabled,
@@ -286,6 +295,7 @@ impl RecordingConfig {
             pause_on_drm_content: self.pause_on_drm_content,
             languages: self.languages.clone(),
             max_snapshot_width: self.max_snapshot_width,
+            min_capture_interval_ms: self.min_capture_interval_ms,
         }
     }
 }

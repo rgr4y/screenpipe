@@ -163,6 +163,10 @@ export type Settings = SettingsStore & {
 	/** Experimental: capture System Audio via CoreAudio Process Tap (macOS 14.4+) instead of ScreenCaptureKit.
 	 *  Off by default. Ignored on macOS <14.4 and non-macOS — falls back to SCK. */
 	experimentalCoreaudioSystemAudio?: boolean;
+	/** When true, older screenshots are compacted into MP4 video chunks */
+	enableVideoCompaction?: boolean;
+	/** Minimum time between screenshots after activity or visual changes, in milliseconds */
+	minCaptureIntervalMs?: number;
 	/** Continue recording audio when the screen is locked (default: false) */
 	recordWhileLocked?: boolean;
 	/** Auto-append typed text to meeting notes when a meeting ends */
@@ -374,6 +378,8 @@ let DEFAULT_SETTINGS: Settings = {
 			enableAccessibility: true,
 			overlayMode: "fullscreen",
 			showOverlayInScreenRecording: false,
+			enableVideoCompaction: true,
+			minCaptureIntervalMs: 200,
 			videoQuality: "balanced",
 			transcriptionMode: "batch",
 			cloudArchiveEnabled: false,
@@ -508,6 +514,16 @@ function createSettingsStore() {
 				activeConversationId: null,
 				historyEnabled: true,
 			};
+			needsUpdate = true;
+		}
+
+		if (settings.enableVideoCompaction === undefined) {
+			settings.enableVideoCompaction = true;
+			needsUpdate = true;
+		}
+
+		if (settings.minCaptureIntervalMs === undefined || settings.minCaptureIntervalMs === null) {
+			settings.minCaptureIntervalMs = 200;
 			needsUpdate = true;
 		}
 

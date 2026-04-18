@@ -164,7 +164,7 @@ export const ValidatedTextarea = React.forwardRef<HTMLTextAreaElement, Validated
         </div>
         
         {getMessage() && (
-          <p className={cn("text-sm", getMessageColor())}>
+          <p className={cn("text-xs", getMessageColor())}>
             {getMessage()}
             {maxLength && (
               <span className="float-right text-muted-foreground">

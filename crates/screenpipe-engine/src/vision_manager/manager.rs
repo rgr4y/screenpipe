@@ -41,6 +41,8 @@ pub struct VisionManagerConfig {
     pub languages: Vec<screenpipe_core::Language>,
     /// Maximum width for stored snapshots (0 = no limit, store at native res).
     pub max_snapshot_width: u32,
+    /// User-configured minimum time between screenshots after activity/visual changes.
+    pub min_capture_interval_ms: u64,
 }
 
 /// Status of the VisionManager
@@ -286,7 +288,21 @@ impl VisionManager {
         };
 
         // Event-driven capture config
-        let capture_config = EventDrivenCaptureConfig::default();
+        let mut capture_config = EventDrivenCaptureConfig {
+            min_capture_interval_ms: self.config.min_capture_interval_ms,
+            user_min_capture_interval_ms: self.config.min_capture_interval_ms,
+            ..Default::default()
+        };
+        if let Some(ref rx) = self.power_profile_rx {
+            let profile = rx.borrow().clone();
+            capture_config.min_capture_interval_ms = capture_config
+                .user_min_capture_interval_ms
+                .max(profile.min_capture_interval_ms);
+            capture_config.idle_capture_interval_ms = profile.idle_capture_interval_ms;
+            capture_config.jpeg_quality = profile.jpeg_quality;
+            capture_config.visual_check_interval_ms = profile.visual_check_interval_ms;
+            capture_config.visual_change_threshold = profile.visual_change_threshold;
+        }
 
         // Subscribe to the shared broadcast channel so UI events reach this monitor
         let trigger_rx = self.trigger_tx.subscribe();

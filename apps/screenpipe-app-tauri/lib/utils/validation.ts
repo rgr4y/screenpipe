@@ -79,6 +79,8 @@ export const settingsStoreSchema = z.object({
   ignoredUrls: z.array(z.string()),
   disableVision: z.boolean(),
   useAllMonitors: z.boolean(),
+    enableVideoCompaction: z.boolean(),
+    minCaptureIntervalMs: z.number().int().min(200, "Minimum interval is 200ms").max(5000, "Maximum interval is 5000ms"),
   fps: z.number().min(0.1, "FPS must be at least 0.1").max(60, "FPS cannot exceed 60"),
 
   // System Settings
@@ -178,6 +180,9 @@ export const sanitizeValue = (field: ExtendedSettingsKeys, value: any): any => {
     
     case "fps":
       return Math.max(0.1, Math.min(60, parseFloat(String(value)) || 1));
+
+      case "minCaptureIntervalMs":
+          return Math.max(200, Math.min(5000, parseInt(String(value)) || 200));
       
     case "dataDir":
       return String(value).trim();

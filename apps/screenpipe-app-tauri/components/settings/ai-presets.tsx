@@ -170,6 +170,15 @@ export interface AIModel {
   warning?: string;
 }
 
+const shouldUseNativeHttp = (provider?: AIPreset["provider"]) => {
+  return (
+    provider === "custom" ||
+    provider === "native-ollama" ||
+    provider === "openai-chatgpt" ||
+    provider === "anthropic"
+  );
+};
+
 export const AIProviderCard = ({
   type,
   title,
@@ -186,7 +195,7 @@ export const AIProviderCard = ({
       onClick={onClick}
       className={cn(
         "flex py-3 px-4 rounded-lg hover:bg-accent transition-colors h-[110px] w-full cursor-pointer",
-        selected ? "border-black/60 border-[1.5px]" : "",
+        selected ? "border-primary border-[1.5px] ring-1 ring-primary/35" : "",
         disabled && "opacity-50 cursor-not-allowed",
       )}
     >
@@ -283,7 +292,7 @@ const AISection = ({
       
       setValidationErrors(errors);
     }, 300),
-    [settings.aiPresets, preset?.id]
+    [visiblePresets, preset?.id]
   );
 
   // Update validation when preset changes
@@ -600,8 +609,9 @@ const AISection = ({
     } else {
       // Custom providers often do not implement CORS preflight on /models.
       // Use tauriFetch for all custom providers to skip browser OPTIONS preflight.
-      const modelsFetchFn =
-        settingsPreset?.provider === "custom" ? tauriFetch : fetch;
+      const modelsFetchFn = shouldUseNativeHttp(settingsPreset?.provider)
+        ? tauriFetch
+        : fetch;
       try {
         modelsResponse = await modelsFetchFn(modelsUrl, {
           headers,
@@ -733,8 +743,11 @@ const AISection = ({
       chatHeaders["OpenAI-Beta"] = "responses=experimental";
     }
 
-    // Use tauriFetch for chatgpt.com and Anthropic to bypass CORS
-    const fetchFn = (isChatGpt || isAnthropic) ? tauriFetch : fetch;
+    // Use native HTTP for local/custom providers so browser preflight does not
+    // stop requests at OPTIONS.
+    const fetchFn = shouldUseNativeHttp(settingsPreset?.provider)
+      ? tauriFetch
+      : fetch;
 
     const chatStart = performance.now();
     try {
@@ -833,7 +846,7 @@ const AISection = ({
       switch (settingsPreset?.provider) {
 
         case "native-ollama":
-          const ollamaResponse = await fetch("http://localhost:11434/api/tags");
+          const ollamaResponse = await tauriFetch("http://localhost:11434/api/tags");
           if (!ollamaResponse.ok)
             throw new Error("Failed to fetch Ollama models");
           const ollamaData = (await ollamaResponse.json()) as {
@@ -1494,7 +1507,7 @@ const AISection = ({
         required={true}
         minLength={10}
         maxLength={5000}
-        className="min-h-[100px] resize-none"
+        className="min-h-32 resize-y font-mono text-xs leading-6 transition-[min-height] duration-150 ease-out focus:min-h-56"
         helperText="This prompt will be used to guide the AI's responses"
       />
 
@@ -1528,7 +1541,7 @@ const AISection = ({
               <button
                 key={preset.value}
                 type="button"
-                className={`px-2 py-1 text-xs rounded-md border transition-colors ${
+                className={`px-2.5 py-1.5 text-xs rounded-md border transition-colors ${
                   (settingsPreset as any)?.maxTokens === preset.value
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-muted/50 hover:bg-muted border-border"
@@ -1536,7 +1549,7 @@ const AISection = ({
                 onClick={() => updateSettingsPreset({ maxTokens: preset.value } as any)}
               >
                 {preset.label}
-                <span className="text-[10px] ml-1 opacity-60">{preset.hint}</span>
+                <span className="ml-1 opacity-60">{preset.hint}</span>
               </button>
             ))}
           </div>
@@ -1763,7 +1776,10 @@ function SortablePresetCard({
               {formatPresetName(preset.id)}
             </h3>
             {isDefault && (
-              <Badge variant="default" className="text-[10px] px-1.5 py-0">
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 border-primary/40 bg-primary/10 text-primary"
+              >
                 default
               </Badge>
             )}
@@ -2059,8 +2075,8 @@ export const AIPresets = () => {
             {settings.aiPresets.length} preset{settings.aiPresets.length !== 1 ? 's' : ''}
           </Badge>
           {settings.aiPresets.some(p => p.defaultPreset) && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4 text-foreground/70" />
+            <div className="flex items-center gap-2 text-sm text-success">
+              <CheckCircle2 className="h-4 w-4 text-success" />
               Default preset configured
             </div>
           )}
