@@ -1716,7 +1716,7 @@ export const TimelineSlider = ({
 											{/* Time marker below frame */}
 											{timeMarker && (
 												<div
-													className="absolute top-full mt-1 left-1/2 -translate-x-1/2 text-[9px] font-mono text-muted-foreground whitespace-nowrap"
+													className="absolute top-full mt-1 left-1/2 -translate-x-1/2 text-xs font-mono text-muted-foreground whitespace-nowrap"
 													style={{ direction: 'ltr' }}
 												>
 													{timeMarker.time}

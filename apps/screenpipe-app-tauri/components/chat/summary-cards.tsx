@@ -46,7 +46,7 @@ function SuggestionSkeleton() {
   }, []);
 
   return (
-    <div className="grid grid-cols-3 gap-1.5">
+    <div className="grid grid-cols-3 gap-[0.5625rem]">
       {[0, 1, 2, 3, 4, 5].map((cardIdx) => {
         const cardRow = Math.floor(cardIdx / 3);
         const cardCol = cardIdx % 3;
@@ -56,15 +56,14 @@ function SuggestionSkeleton() {
         return (
           <div
             key={cardIdx}
-            className="border border-border/20 p-2"
-            style={{ minHeight: 52 }}
+            className="min-h-[3.375rem] border border-border/20 p-[0.6875rem]"
           >
             {/* Micro grid — scan line sweeps diagonally */}
             <div
               className="grid gap-px mb-2"
               style={{
-                gridTemplateColumns: `repeat(${GRID_COLS}, 4px)`,
-                gridTemplateRows: `repeat(${GRID_ROWS}, 4px)`,
+                gridTemplateColumns: `repeat(${GRID_COLS}, 0.25rem)`,
+                gridTemplateRows: `repeat(${GRID_ROWS}, 0.25rem)`,
               }}
             >
               {Array.from({ length: CARD_CELLS }, (_, i) => {
@@ -81,18 +80,18 @@ function SuggestionSkeleton() {
                     className={`transition-colors duration-75 ${
                       on ? "bg-foreground" : dist < 5 ? "bg-foreground/10" : "bg-foreground/[0.03]"
                     }`}
-                    style={{ width: 4, height: 4 }}
+                    style={{ width: "0.25rem", height: "0.25rem" }}
                   />
                 );
               })}
             </div>
             {/* Text placeholder bars that pulse with the scan */}
             <div
-              className="h-[7px] bg-foreground/[0.08] transition-all duration-100"
+              className="h-[0.4375rem] bg-foreground/[0.08] transition-all duration-100"
               style={{ width: `${55 + Math.sin(tick * 0.15 + cardIdx) * 25}%` }}
             />
             <div
-              className="h-[5px] bg-foreground/[0.04] mt-1 transition-all duration-100"
+              className="mt-1 h-[0.3125rem] bg-foreground/[0.04] transition-all duration-100"
               style={{ width: `${35 + Math.sin(tick * 0.15 + cardIdx + 2) * 20}%` }}
             />
           </div>
@@ -132,34 +131,34 @@ export function SummaryCards({
   };
 
   return (
-    <div className="relative flex flex-col items-center py-4 px-4">
+    <div className="relative flex w-full max-w-[57.5rem] flex-col items-center px-4 py-4">
       {/* Header */}
       <div className="relative mx-auto mb-3 w-fit">
         <div className="absolute -inset-4 border border-dashed border-border/50" />
         <div className="absolute -inset-2 border border-border/30" />
-        <PipeAIIconLarge size={40} thinking={false} className="relative text-foreground/80" />
+        <PipeAIIconLarge size={36} thinking={false} className="relative text-foreground/80" />
       </div>
-      <h3 className="text-sm font-medium mb-0.5 text-foreground">
+      <h3 className="mb-1 text-center text-[1.35rem] font-semibold tracking-tight text-foreground">
         {userName ? `How can I help, ${userName}?` : "How can I help today?"}
       </h3>
-      <p className="text-[0.6875rem] text-muted-foreground mb-2">
+      <p className="mb-3 text-center text-[0.9rem] text-muted-foreground">
         One-click summaries from your screen activity
       </p>
 
 
       {/* Featured template cards */}
-      <div className="grid grid-cols-3 gap-1.5 w-full max-w-lg mb-2">
+      <div className="mb-2 grid w-full max-w-[57.5rem] grid-cols-3 gap-[0.5625rem]">
         {featured.map((pipe) => (
           <button
             key={pipe.name}
             onClick={() => handleCardClick(pipe)}
-            className="group text-left p-2 border border-border/40 bg-muted/20 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer"
+            className="group min-h-[6.75rem] cursor-pointer border border-border/40 bg-muted/20 p-[0.6875rem] text-left transition-all duration-150 hover:border-foreground hover:bg-foreground hover:text-background"
           >
             <div className="text-sm mb-0.5">{pipe.icon}</div>
-            <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
+            <div className="text-base font-medium group-hover:text-background mb-0.5 leading-tight">
               {pipe.title}
             </div>
-            <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
+            <div className="text-sm text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
               {pipe.description}
             </div>
           </button>
@@ -167,13 +166,13 @@ export function SummaryCards({
         {/* Custom Summary card */}
         <button
           onClick={() => setShowBuilder(true)}
-          className="group text-left p-2 border border-dashed border-border/40 bg-muted/5 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer"
+          className="group min-h-[6.75rem] cursor-pointer border border-dashed border-border/40 bg-muted/5 p-[0.6875rem] text-left transition-all duration-150 hover:border-foreground hover:bg-foreground hover:text-background"
         >
           <div className="text-sm mb-0.5">{"\u2728"}</div>
-          <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
+          <div className="text-base font-medium group-hover:text-background mb-0.5 leading-tight">
             Custom Summary
           </div>
-          <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
+          <div className="text-sm text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
             Build your own
           </div>
         </button>
@@ -181,13 +180,13 @@ export function SummaryCards({
         {discover.length > 0 && (
           <button
             onClick={() => setShowAll(!showAll)}
-            className="group text-left p-2 border border-border/40 bg-muted/10 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer"
+            className="group min-h-[6.75rem] cursor-pointer border border-border/40 bg-muted/10 p-[0.6875rem] text-left transition-all duration-150 hover:border-foreground hover:bg-foreground hover:text-background"
           >
             <div className="text-sm mb-0.5">{"\u{1F50D}"}</div>
-            <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
+            <div className="text-base font-medium group-hover:text-background mb-0.5 leading-tight">
               {showAll ? "Show Less" : "Discover"}
             </div>
-            <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1 flex items-center gap-1">
+            <div className="text-sm text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1 flex items-center gap-1">
               {showAll ? (
                 <>Collapse <ChevronUp className="w-3 h-3 inline" /></>
               ) : (
@@ -204,19 +203,19 @@ export function SummaryCards({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          className="grid grid-cols-3 gap-1.5 w-full max-w-lg mb-2"
+          className="mb-2 grid w-full max-w-[57.5rem] grid-cols-3 gap-[0.5625rem]"
         >
           {discover.map((pipe) => (
             <button
               key={pipe.name}
               onClick={() => handleCardClick(pipe)}
-              className="group text-left p-2 border border-border/30 bg-muted/10 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer"
+              className="group min-h-[6.75rem] cursor-pointer border border-border/30 bg-muted/10 p-[0.6875rem] text-left transition-all duration-150 hover:border-foreground hover:bg-foreground hover:text-background"
             >
               <div className="text-sm mb-0.5">{pipe.icon}</div>
-              <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
+              <div className="text-base font-medium group-hover:text-background mb-0.5 leading-tight">
                 {pipe.title}
               </div>
-              <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
+              <div className="text-sm text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
                 {pipe.description}
               </div>
             </button>
@@ -226,11 +225,11 @@ export function SummaryCards({
 
       {/* User's custom saved templates */}
       {customTemplates.length > 0 && (
-        <div className="w-full max-w-lg mb-2">
-          <div className="text-[0.625rem] text-muted-foreground/60 uppercase tracking-wider font-medium mb-1 px-1">
+        <div className="mb-2 w-full max-w-[57.5rem]">
+          <div className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium mb-1 px-1">
             your templates
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-3 gap-[0.5625rem]">
             {customTemplates.map((ct) => (
               <div
                 key={ct.id}
@@ -238,13 +237,13 @@ export function SummaryCards({
                 tabIndex={0}
                 onClick={() => handleCustomTemplateClick(ct)}
                 onKeyDown={(e) => e.key === "Enter" && handleCustomTemplateClick(ct)}
-                className="group text-left p-2 border border-border/30 bg-muted/10 hover:bg-foreground hover:text-background hover:border-foreground transition-all duration-150 cursor-pointer relative"
+                className="group relative min-h-[6.75rem] cursor-pointer border border-border/30 bg-muted/10 p-[0.6875rem] text-left transition-all duration-150 hover:border-foreground hover:bg-foreground hover:text-background"
               >
                 <div className="text-sm mb-0.5">{"\u{1F4CC}"}</div>
-                <div className="text-[0.6875rem] font-medium group-hover:text-background mb-0.5 leading-tight">
+                <div className="text-base font-medium group-hover:text-background mb-0.5 leading-tight">
                   {ct.title}
                 </div>
-                <div className="text-[0.625rem] text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
+                <div className="text-sm text-muted-foreground group-hover:text-background/60 leading-tight line-clamp-1">
                   {ct.description || ct.timeRange}
                 </div>
                 <button
@@ -264,9 +263,9 @@ export function SummaryCards({
       )}
 
       {/* ─── Dynamic AI suggestions ─────────────────────────────────────────── */}
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-[57.5rem]">
         <div className="flex items-center gap-1.5 mb-1.5 px-1">
-          <div className="text-[0.625rem] text-muted-foreground/60 uppercase tracking-wider font-medium font-mono">
+          <div className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium font-mono">
             based on your activity
           </div>
           {onRefreshSuggestions && (
@@ -300,7 +299,7 @@ export function SummaryCards({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="grid grid-cols-3 gap-1.5"
+            className="grid grid-cols-3 gap-[0.5625rem]"
           >
               {autoSuggestions.slice(0, 6).map((s, i) => {
                 const isHero = (s.priority ?? 2) === 1 && i === 0;
@@ -312,18 +311,18 @@ export function SummaryCards({
                     transition={{ duration: 0.15, delay: i * 0.05 }}
                     type="button"
                     onClick={() => onSendMessage(s.text)}
-                    className={`group text-left p-2 font-mono bg-muted/20 hover:bg-foreground hover:text-background border hover:border-foreground text-muted-foreground transition-all duration-150 cursor-pointer ${
+                    className={`group min-h-[6.75rem] cursor-pointer border bg-muted/20 p-[0.6875rem] text-left font-mono text-muted-foreground transition-all duration-150 hover:border-foreground hover:bg-foreground hover:text-background ${
                       isHero
                         ? "border-border/40 bg-muted/30"
                         : "border-border/20"
                     }`}
                     title={s.text}
                   >
-                    <div className={`text-[0.6875rem] leading-tight ${isHero ? "font-medium" : ""} line-clamp-2`}>
+                    <div className={`text-sm leading-tight ${isHero ? "font-medium" : ""} line-clamp-2`}>
                       {s.text}
                     </div>
                     {s.preview && (
-                      <div className="text-[0.625rem] text-muted-foreground/50 group-hover:text-background/50 leading-tight mt-0.5 truncate">
+                      <div className="text-xs text-muted-foreground/50 group-hover:text-background/50 leading-tight mt-0.5 truncate">
                         {s.preview}
                       </div>
                     )}
