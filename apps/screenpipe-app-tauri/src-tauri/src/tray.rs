@@ -239,10 +239,9 @@ pub fn setup_tray(app: &AppHandle, update_item: Option<&tauri::menu::MenuItem<Wr
         // Set autosaveName so macOS remembers position after user Cmd+drags it
         set_autosave_name(&main_tray);
 
-        // Start menu updater only when we have an update item (not enterprise)
-        if let Some(item) = update_item {
-            setup_tray_menu_updater(app.clone(), item);
-        }
+        // Always start menu updater so recording/device status refreshes in all modes
+        // (including ROB_MODE/enterprise where update_item is intentionally absent).
+        setup_tray_menu_updater(app.clone(), update_item.cloned());
     }
     Ok(())
 }
@@ -931,7 +930,7 @@ fn handle_menu_event(app_handle: &AppHandle, event: tauri::menu::MenuEvent) {
 
 async fn update_menu_if_needed(
     app: &AppHandle,
-    update_item: &tauri::menu::MenuItem<Wry>,
+    update_item: Option<&tauri::menu::MenuItem<Wry>>,
 ) -> Result<()> {
     // Pre-fetch all data on the tokio thread (off main thread) so the
     // main-thread closure only does lightweight menu-item construction.
@@ -975,14 +974,14 @@ async fn update_menu_if_needed(
         // the old one from the manager), NSStatusBar _removeStatusItem fires on the wrong
         // thread and crashes.
         let app_for_thread = app.clone();
-        let update_item = update_item.clone();
+        let update_item = update_item.cloned();
         let has_perm_issue = new_state.has_permission_issue;
         let _ = app.run_on_main_thread(move || {
             if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 if let Some(tray) = app_for_thread.tray_by_id("screenpipe_main") {
                     debug!("tray_menu_update: setting menu");
                     if let Ok(menu) =
-                        create_dynamic_menu(&app_for_thread, &new_state, Some(&update_item), &data)
+                        create_dynamic_menu(&app_for_thread, &new_state, update_item.as_ref(), &data)
                     {
                         // Keep a clone alive to prevent use-after-free (see PREVIOUS_TRAY_MENU doc).
                         if let Ok(mut guard) = PREVIOUS_TRAY_MENU.lock() {
@@ -1018,8 +1017,7 @@ async fn update_menu_if_needed(
     Ok(())
 }
 
-pub fn setup_tray_menu_updater(app: AppHandle, update_item: &tauri::menu::MenuItem<Wry>) {
-    let update_item = update_item.clone();
+pub fn setup_tray_menu_updater(app: AppHandle, update_item: Option<tauri::menu::MenuItem<Wry>>) {
     tauri::async_runtime::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
         loop {
@@ -1028,7 +1026,7 @@ pub fn setup_tray_menu_updater(app: AppHandle, update_item: &tauri::menu::MenuIt
                 info!("Tray menu updater received quit request, shutting down.");
                 break;
             }
-            if let Err(e) = update_menu_if_needed(&app, &update_item).await {
+            if let Err(e) = update_menu_if_needed(&app, update_item.as_ref()).await {
                 let msg = format!("{:#}", e);
                 error!("Failed to update tray menu: {}", msg);
                 // Tauri resource table can go stale after in-place updates on
