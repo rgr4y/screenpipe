@@ -640,7 +640,8 @@ impl ShowRewindWindow {
 
         let window = match self {
             ShowRewindWindow::Main => {
-                if !onboarding_store.is_completed {
+                let rob_mode = option_env!("ROB_MODE") == Some("1");
+                if !rob_mode && !onboarding_store.is_completed {
                     return ShowRewindWindow::Onboarding.show(app);
                 }
 
@@ -1391,7 +1392,8 @@ impl ShowRewindWindow {
                 window
             }
             ShowRewindWindow::Onboarding => {
-                if onboarding_store.is_completed {
+                let rob_mode = option_env!("ROB_MODE") == Some("1");
+                if rob_mode || onboarding_store.is_completed {
                     return ShowRewindWindow::Home { page: None }.show(app);
                 }
 

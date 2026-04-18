@@ -9,7 +9,7 @@
     "build": "next build",
     "predev": "bun scripts/pre_build.js",
     "prebuild": "bun scripts/pre_build.js",
-    "tauri": "tauri",
+    "tauri": "bun scripts/run_tauri.js",
     "tauri:build": "scripts/build_macos.sh",
     "clean": "rm -rf out && cargo clean && rm -rf src-tauri/{screenpipe-*,tesseract-*,ffmpeg*,openblas*,bun*,ollama*,ui_monitor*} node_modules"
   },
