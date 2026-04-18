@@ -373,12 +373,11 @@ function HomeContent() {
                 const inputs = recordingDevices.filter((d) => d.kind === "input");
                 const outputs = recordingDevices.filter((d) => d.kind === "output");
                 const screenOpacity = overlayData.screenActive ? 0.5 + Math.min(overlayData.captureFps / 2, 0.5) : 0.2;
-                const audioOpacity = overlayData.audioActive ? 0.5 + Math.min(overlayData.speechRatio, 0.5) : 0.2;
 
                 const groups: { key: string; icon: typeof Monitor; count: number; title: string; opacity: number; devices: RecordingDevice[] }[] = [];
                 if (monitors.length > 0) groups.push({ key: "monitor", icon: Monitor, count: monitors.length, title: monitors.map((d) => d.name).join(", "), opacity: screenOpacity, devices: monitors });
-                if (inputs.length > 0) groups.push({ key: "mic", icon: Mic, count: inputs.length, title: inputs.map((d) => d.name).join(", "), opacity: audioOpacity, devices: inputs });
-                if (outputs.length > 0) groups.push({ key: "output", icon: Volume2, count: outputs.length, title: outputs.map((d) => d.name).join(", "), opacity: audioOpacity, devices: outputs });
+                if (inputs.length > 0) groups.push({ key: "mic", icon: Mic, count: inputs.length, title: inputs.map((d) => d.name).join(", "), opacity: 1, devices: inputs });
+                if (outputs.length > 0) groups.push({ key: "output", icon: Volume2, count: outputs.length, title: outputs.map((d) => d.name).join(", "), opacity: 1, devices: outputs });
 
                 return (
                   <div className="flex items-center gap-2 mt-1.5">
@@ -412,13 +411,39 @@ function HomeContent() {
                               }
                             }}
                           >
-                            <Icon
-                              className={cn("h-3 w-3 transition-opacity duration-500", isTranslucent ? "vibrant-sidebar-fg" : "text-foreground")}
-                              style={{ opacity }}
-                            />
-                            {count > 1 && (
-                              <span className={cn("text-[0.5625rem] font-medium leading-none", isTranslucent ? "vibrant-sidebar-fg-muted" : "text-foreground/50")}>{count}</span>
-                            )}
+                            {(() => {
+                              const activeCount = groupDevices.filter((d: RecordingDevice) => d.active).length;
+                              const isAudioGroup = key === "mic" || key === "output";
+                              const allActive = activeCount === groupDevices.length;
+                              const someActive = activeCount > 0;
+                              const iconClassName = isAudioGroup
+                                ? allActive
+                                  ? "text-primary"
+                                  : someActive
+                                    ? "text-primary/75"
+                                    : "text-muted-foreground"
+                                : isTranslucent
+                                  ? "vibrant-sidebar-fg"
+                                  : "text-foreground";
+                              const countClassName = isAudioGroup
+                                ? someActive
+                                  ? "text-primary/80"
+                                  : "text-muted-foreground"
+                                : isTranslucent
+                                  ? "vibrant-sidebar-fg-muted"
+                                  : "text-foreground/50";
+                              return (
+                                <>
+                                  <Icon
+                                    className={cn("h-3 w-3 transition-colors duration-200", iconClassName)}
+                                    style={key === "monitor" ? { opacity } : undefined}
+                                  />
+                                  {count > 1 && (
+                                    <span className={cn("text-[0.5625rem] font-medium leading-none", countClassName)}>{count}</span>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="text-xs">
