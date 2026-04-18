@@ -20,6 +20,23 @@ import { useOverlayData } from "./use-overlay-data";
 import { AudioEqualizer } from "./audio-equalizer";
 import { ScreenMatrix } from "./screen-matrix";
 
+type OverlaySize = "small" | "medium" | "large";
+
+const DEFAULT_OVERLAY_SIZE: OverlaySize = "small";
+
+// The reminder should be readable at the base preset. The previous implementation
+// used micro-sized 7-8px tokens as the baseline and then scaled those up, which
+// left the "small" preset looking like a 50% debug overlay instead of 100% UI.
+const OVERLAY_SCALE_BY_SIZE: Record<OverlaySize, number> = {
+  small: 1,
+  medium: 1.18,
+  large: 1.36,
+};
+
+function isOverlaySize(value: unknown): value is OverlaySize {
+  return value === "small" || value === "medium" || value === "large";
+}
+
 function useMeetingState() {
   const [active, setActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -74,7 +91,9 @@ export default function ShortcutReminderPage() {
   const [searchShortcut, setSearchShortcut] = useState<string | null>(null);
   const overlayData = useOverlayData();
   const meeting = useMeetingState();
-  const [overlayScale, setOverlayScale] = useState(1);
+  const [overlayScale, setOverlayScale] = useState(
+    OVERLAY_SCALE_BY_SIZE[DEFAULT_OVERLAY_SIZE],
+  );
   const isMacRef = useRef(isMac);
   isMacRef.current = isMac;
 
@@ -94,9 +113,9 @@ export default function ShortcutReminderPage() {
       if (settings?.searchShortcut) {
         setSearchShortcut(formatShortcut(settings.searchShortcut, isMacRef.current));
       }
-      if (settings?.shortcutOverlaySize) {
-        const s = settings.shortcutOverlaySize;
-        setOverlayScale(s === "large" ? 2 : s === "medium" ? 1.5 : 1);
+      const overlaySize = settings?.shortcutOverlaySize;
+      if (isOverlaySize(overlaySize)) {
+        setOverlayScale(OVERLAY_SCALE_BY_SIZE[overlaySize]);
       }
     } catch (e) {
       console.error("Failed to read shortcuts from store file:", e);
@@ -186,17 +205,16 @@ export default function ShortcutReminderPage() {
     >
       <div
         onMouseDown={handleMouseDown}
-        className="select-none"
+        className="select-none overflow-hidden rounded-full border border-white/20 shadow-[0_10px_28px_rgba(0,0,0,0.34)]"
         style={{
+          background: "rgba(0, 0, 0, 0.8)",
           cursor: "grab",
           transform: overlayScale !== 1 ? `scale(${overlayScale})` : undefined,
           transformOrigin: "center center",
         }}
       >
         <div
-          className="border border-white/20"
           style={{
-            background: "rgba(0, 0, 0, 0.75)",
             display: "grid",
             gridTemplateColumns: "1fr 1px 1fr 1px 1fr",
           }}
@@ -209,15 +227,15 @@ export default function ShortcutReminderPage() {
               posthog.capture("shortcut_reminder_timeline_clicked");
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="flex items-center justify-center gap-0.5 px-1 py-0.5 hover:bg-white/10 transition-colors cursor-pointer"
+            className="flex items-center justify-center gap-1 px-2.5 py-1.5 hover:bg-white/10 transition-colors cursor-pointer"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             title="Open timeline"
           >
-            <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/50 shrink-0">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/50 shrink-0">
               <rect x="3" y="3" width="18" height="18" />
               <line x1="3" y1="9" x2="21" y2="9" />
             </svg>
-            <span className="font-mono text-[8px] font-medium text-white/80 whitespace-nowrap">
+            <span className="font-mono text-[11px] font-medium text-white/85 whitespace-nowrap leading-none">
               {overlayShortcut ?? "..."}
             </span>
           </button>
@@ -229,14 +247,14 @@ export default function ShortcutReminderPage() {
               posthog.capture("shortcut_reminder_chat_clicked");
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="flex items-center justify-center gap-0.5 px-1 py-0.5 hover:bg-white/10 transition-colors cursor-pointer"
+            className="flex items-center justify-center gap-1 px-2.5 py-1.5 hover:bg-white/10 transition-colors cursor-pointer"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             title="Open chat"
           >
-            <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/50 shrink-0">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/50 shrink-0">
               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
             </svg>
-            <span className="font-mono text-[8px] font-medium text-white/80 whitespace-nowrap">
+            <span className="font-mono text-[11px] font-medium text-white/85 whitespace-nowrap leading-none">
               {chatShortcut ?? "..."}
             </span>
           </button>
@@ -248,28 +266,28 @@ export default function ShortcutReminderPage() {
               posthog.capture("shortcut_reminder_search_clicked");
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="flex items-center justify-center gap-0.5 px-1 py-0.5 hover:bg-white/10 transition-colors cursor-pointer"
+            className="flex items-center justify-center gap-1 px-2.5 py-1.5 hover:bg-white/10 transition-colors cursor-pointer"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             title="Open search"
           >
-            <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/50 shrink-0">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/50 shrink-0">
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <span className="font-mono text-[8px] font-medium text-white/80 whitespace-nowrap">
+            <span className="font-mono text-[11px] font-medium text-white/85 whitespace-nowrap leading-none">
               {searchShortcut ?? "..."}
             </span>
           </button>
 
           {/* Row 2: Status + close */}
-          <div className="px-1 py-0.5 min-w-0 overflow-hidden border-t border-white/10">
+          <div className="px-2.5 py-1.5 min-w-0 overflow-hidden border-t border-white/10">
             <AudioEqualizer
               active={overlayData.audioActive}
               speechRatio={overlayData.speechRatio}
             />
           </div>
           <div className="bg-white/10 border-t border-white/10" />
-          <div className="px-1 py-0.5 min-w-0 overflow-hidden border-t border-white/10">
+          <div className="px-2.5 py-1.5 min-w-0 overflow-hidden border-t border-white/10">
             <ScreenMatrix
               active={overlayData.screenActive}
               captureFps={overlayData.captureFps}
@@ -277,21 +295,21 @@ export default function ShortcutReminderPage() {
             />
           </div>
           <div className="bg-white/10 border-t border-white/10" />
-          <div className="flex items-center justify-center gap-1 py-0.5 border-t border-white/10">
+          <div className="flex items-center justify-center gap-1.5 px-2 py-1.5 border-t border-white/10">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 meeting.toggle();
               }}
               disabled={meeting.loading}
-              className="relative flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer p-0.5"
+              className="relative flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer p-1 rounded-md"
               title={meeting.active ? "stop meeting" : "start meeting"}
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             >
               {meeting.active && (
-                <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-white animate-pulse" />
               )}
-              <Phone className={`h-2 w-2 ${meeting.active ? "text-white" : "text-white/40 hover:text-white"}`} />
+              <Phone className={`h-3.5 w-3.5 ${meeting.active ? "text-white" : "text-white/40 hover:text-white"}`} />
             </button>
             <button
               onClick={handleClose}
@@ -299,11 +317,11 @@ export default function ShortcutReminderPage() {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              className="flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer p-0.5"
+              className="flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer p-1 rounded-md"
               title="Hide shortcut reminder"
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             >
-              <X className="h-2 w-2 text-white/40 hover:text-white" />
+              <X className="h-3.5 w-3.5 text-white/40 hover:text-white" />
             </button>
           </div>
         </div>

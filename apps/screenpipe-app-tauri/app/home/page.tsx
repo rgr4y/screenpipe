@@ -131,58 +131,99 @@ function HomeContent() {
 
   // Fetch actual recording devices from health endpoint (same source as tray menu)
   interface RecordingDevice { name: string; kind: "monitor" | "input" | "output"; active: boolean }
+  type AudioGroupKey = "mic" | "output";
+  interface PendingAudioToggle { targetActive: boolean; startedAt: number }
   const [recordingDevices, setRecordingDevices] = useState<RecordingDevice[]>([]);
+  const [pendingAudioToggles, setPendingAudioToggles] = useState<Partial<Record<AudioGroupKey, PendingAudioToggle>>>({});
+  const hasPendingAudioToggle = Object.keys(pendingAudioToggles).length > 0;
+
+  const fetchDevices = useCallback(async (): Promise<RecordingDevice[] | null> => {
+    try {
+      const response = await localFetch("/health");
+      if (!response.ok) return null;
+      const health = (await response.json()) as { monitors?: string[]; device_status_details?: string };
+      const devices: RecordingDevice[] = [];
+
+      // Parse monitors — filter to only those actually being recorded
+      if (health.monitors) {
+        const monitorIds: string[] = settings.monitorIds ?? ["default"];
+        const useAll = settings.useAllMonitors ?? true;
+        for (const name of health.monitors) {
+          // If user selected specific monitors, filter to only those
+          if (!useAll && monitorIds.length > 0 && monitorIds[0] !== "default") {
+            // Health format: "Display 3 (1920x1080)"
+            // Stable ID format: "Display 3_1920x1080_0,0"
+            const healthName = name.split(" (")[0];
+            const matched = monitorIds.some((id) => {
+              const idName = id.split("_")[0];
+              return healthName === idName;
+            });
+            if (!matched) continue;
+          }
+          devices.push({ name, kind: "monitor", active: true });
+        }
+      }
+
+      // Parse audio devices from device_status_details
+      // Format: "DeviceName (input): active (last activity: 2s ago), DeviceName (output): inactive"
+      if (health.device_status_details) {
+        for (const part of health.device_status_details.split(", ")) {
+          const match = part.split(": ");
+          if (match.length < 2) continue;
+          const nameAndType = match[0];
+          const active = match[1].startsWith("active");
+          const kind = nameAndType.includes("(input)") ? "input" as const
+            : nameAndType.includes("(output)") ? "output" as const
+            : "input" as const;
+          const name = nameAndType.replace(/\s*\((input|output)\)\s*/gi, "").trim();
+          devices.push({ name, kind, active });
+        }
+      }
+
+      setRecordingDevices(devices);
+      return devices;
+    } catch {
+      return null;
+    }
+  }, [settings.monitorIds, settings.useAllMonitors]);
 
   useEffect(() => {
     let cancelled = false;
-    const fetchDevices = () => {
-      localFetch("/health")
-        .then((r) => r.ok ? r.json() : null)
-        .then((health: { monitors?: string[]; device_status_details?: string } | null) => {
-          if (cancelled || !health) return;
-          const devices: RecordingDevice[] = [];
-          // Parse monitors — filter to only those actually being recorded
-          if (health.monitors) {
-            const monitorIds: string[] = settings.monitorIds ?? ["default"];
-            const useAll = settings.useAllMonitors ?? true;
-            for (const name of health.monitors) {
-              // If user selected specific monitors, filter to only those
-              if (!useAll && monitorIds.length > 0 && monitorIds[0] !== "default") {
-                // Health format: "Display 3 (1920x1080)"
-                // Stable ID format: "Display 3_1920x1080_0,0"
-                const healthName = name.split(" (")[0];
-                const matched = monitorIds.some((id) => {
-                  const idName = id.split("_")[0];
-                  return healthName === idName;
-                });
-                if (!matched) continue;
-              }
-              devices.push({ name, kind: "monitor", active: true });
-            }
-          }
-          // Parse audio devices from device_status_details
-          // Format: "DeviceName (input): active (last activity: 2s ago), DeviceName (output): inactive"
-          if (health.device_status_details) {
-            for (const part of health.device_status_details.split(", ")) {
-              const match = part.split(": ");
-              if (match.length < 2) continue;
-              const nameAndType = match[0];
-              const active = match[1].startsWith("active");
-              const kind = nameAndType.includes("(input)") ? "input" as const
-                : nameAndType.includes("(output)") ? "output" as const
-                : "input" as const;
-              const name = nameAndType.replace(/\s*\((input|output)\)\s*/gi, "").trim();
-              devices.push({ name, kind, active });
-            }
-          }
-          setRecordingDevices(devices);
-        })
-        .catch(() => {});
+    const poll = async () => {
+      if (cancelled) return;
+      await fetchDevices();
     };
-    fetchDevices();
-    const interval = setInterval(fetchDevices, 10000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [settings.monitorIds, settings.useAllMonitors]);
+    poll();
+    const intervalMs = hasPendingAudioToggle ? 750 : 10000;
+    const interval = setInterval(poll, intervalMs);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [fetchDevices, hasPendingAudioToggle]);
+
+  // Reconcile optimistic audio-toggle state against health confirmation.
+  useEffect(() => {
+    if (!hasPendingAudioToggle) return;
+    const now = Date.now();
+    setPendingAudioToggles((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [groupKey, pending] of Object.entries(prev) as [AudioGroupKey, PendingAudioToggle][]) {
+        const expectedKind = groupKey === "mic" ? "input" : "output";
+        const groupDevices = recordingDevices.filter((d) => d.kind === expectedKind);
+        const allActive = groupDevices.length > 0 && groupDevices.every((d) => d.active);
+        const allInactive = groupDevices.length > 0 && groupDevices.every((d) => !d.active);
+        const confirmed = pending.targetActive ? allActive : allInactive;
+        const timedOut = now - pending.startedAt > 10000;
+        if (confirmed || timedOut) {
+          delete next[groupKey];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [hasPendingAudioToggle, recordingDevices]);
 
   // Active meeting state — lights up the phone icon for ANY active meeting
   // (manual OR auto-detected: Teams, Zoom, etc.). manualActive is true only
@@ -385,35 +426,47 @@ function HomeContent() {
                       <Tooltip key={key}>
                         <TooltipTrigger asChild>
                           <button
+                            disabled={key !== "monitor" && Boolean(pendingAudioToggles[key as AudioGroupKey])}
                             className={cn(
-                              "flex items-center gap-0.5 rounded px-0.5 transition-all",
+                              "flex items-center gap-0.5 rounded px-0.5 transition-all disabled:cursor-not-allowed",
                               key === "monitor"
                                 ? "cursor-default"
                                 : cn(
-                                    "cursor-pointer",
+                                    "cursor-pointer disabled:opacity-75",
                                     isTranslucent ? "hover:bg-white/10" : "hover:bg-muted"
                                   )
                             )}
                             onClick={key === "monitor" ? undefined : async () => {
+                              const audioGroupKey = key as AudioGroupKey;
+                              if (pendingAudioToggles[audioGroupKey]) return;
                               const allActive = groupDevices.every((d: RecordingDevice) => d.active);
+                              const targetActive = !allActive;
                               const endpoint = allActive
                                 ? "/audio/device/stop"
                                 : "/audio/device/start";
-                              for (const d of groupDevices) {
-                                if (allActive || !d.active) {
+                              setPendingAudioToggles((prev) => ({
+                                ...prev,
+                                [audioGroupKey]: { targetActive, startedAt: Date.now() },
+                              }));
+
+                              const operations = groupDevices
+                                .filter((d: RecordingDevice) => allActive || !d.active)
+                                .map(async (d: RecordingDevice) => {
                                   const suffix = d.kind === "input" ? "input" : "output";
-                                  await localFetch(endpoint, {
+                                  return localFetch(endpoint, {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ device_name: `${d.name} (${suffix})` }),
-                                  }).catch(() => {});
-                                }
-                              }
+                                  });
+                                });
+                              await Promise.allSettled(operations);
+                              await fetchDevices();
                             }}
                           >
                             {(() => {
                               const activeCount = groupDevices.filter((d: RecordingDevice) => d.active).length;
                               const isAudioGroup = key === "mic" || key === "output";
+                              const isPending = isAudioGroup && Boolean(pendingAudioToggles[key as AudioGroupKey]);
                               const allActive = activeCount === groupDevices.length;
                               const someActive = activeCount > 0;
                               const iconClassName = isAudioGroup
@@ -435,11 +488,23 @@ function HomeContent() {
                               return (
                                 <>
                                   <Icon
-                                    className={cn("h-3 w-3 transition-colors duration-200", iconClassName)}
+                                    className={cn(
+                                      "h-3 w-3 transition-colors duration-200",
+                                      iconClassName,
+                                      isPending && "animate-[pulse_0.65s_ease-in-out_infinite]"
+                                    )}
                                     style={key === "monitor" ? { opacity } : undefined}
                                   />
                                   {count > 1 && (
-                                    <span className={cn("text-[0.5625rem] font-medium leading-none", countClassName)}>{count}</span>
+                                    <span
+                                      className={cn(
+                                        "text-[0.5625rem] font-medium leading-none",
+                                        countClassName,
+                                        isPending && "animate-[pulse_0.65s_ease-in-out_infinite]"
+                                      )}
+                                    >
+                                      {count}
+                                    </span>
                                   )}
                                 </>
                               );
@@ -447,7 +512,11 @@ function HomeContent() {
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="text-xs">
-                          {key === "monitor" ? title : `${title} — click to ${groupDevices.every((d: RecordingDevice) => d.active) ? "mute" : "unmute"}`}
+                          {key === "monitor"
+                            ? title
+                            : pendingAudioToggles[key as AudioGroupKey]
+                              ? `${title} — applying…`
+                              : `${title} — click to ${groupDevices.every((d: RecordingDevice) => d.active) ? "mute" : "unmute"}`}
                         </TooltipContent>
                       </Tooltip>
                     ))}
