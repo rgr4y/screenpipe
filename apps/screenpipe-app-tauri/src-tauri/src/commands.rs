@@ -4,7 +4,7 @@
 
 use crate::{
     native_notification, native_shortcut_reminder,
-    store::OnboardingStore,
+    store::{OnboardingStore, SettingsStore},
     updates::is_enterprise_build,
     window::{RewindWindowId, ShowRewindWindow},
 };
@@ -981,6 +981,11 @@ pub async fn show_permission_recovery_window(app_handle: tauri::AppHandle) -> Re
 pub async fn get_onboarding_status(
     app_handle: tauri::AppHandle,
 ) -> Result<OnboardingStore, String> {
+    if option_env!("ROB_MODE") == Some("1") {
+        let mut store = OnboardingStore::default();
+        store.complete();
+        return Ok(store);
+    }
     OnboardingStore::get(&app_handle).map(|o| o.unwrap_or_default())
 }
 
@@ -1041,6 +1046,20 @@ pub async fn set_onboarding_step(app_handle: tauri::AppHandle, step: String) -> 
 #[tauri::command]
 #[specta::specta]
 pub async fn show_onboarding_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let rob_mode = option_env!("ROB_MODE") == Some("1")
+        || std::env::var("ROB_MODE").map(|v| v == "1").unwrap_or(false);
+    let dev_mode = SettingsStore::get(&app_handle)
+        .unwrap_or_default()
+        .unwrap_or_default()
+        .dev_mode;
+
+    if rob_mode || dev_mode {
+        ShowRewindWindow::Home { page: None }
+            .show(&app_handle)
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
     ShowRewindWindow::Onboarding
         .show(&app_handle)
         .map_err(|e| e.to_string())?;

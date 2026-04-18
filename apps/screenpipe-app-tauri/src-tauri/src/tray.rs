@@ -47,7 +47,16 @@ struct TrayMenuData {
 /// Gather all data needed by `create_dynamic_menu` on the current (non-main)
 /// thread so the main-thread closure does zero I/O.
 fn prefetch_tray_menu_data(app: &AppHandle) -> TrayMenuData {
-    let onboarding_completed = OnboardingStore::get(app)
+    let rob_mode = option_env!("ROB_MODE") == Some("1")
+        || std::env::var("ROB_MODE").map(|v| v == "1").unwrap_or(false);
+    let dev_mode = SettingsStore::get(app)
+        .unwrap_or_default()
+        .unwrap_or_default()
+        .dev_mode;
+
+    let onboarding_completed = rob_mode
+        || dev_mode
+        || OnboardingStore::get(app)
         .ok()
         .flatten()
         .map(|o| o.is_completed)
@@ -879,6 +888,17 @@ fn handle_menu_event(app_handle: &AppHandle, event: tauri::menu::MenuEvent) {
         "onboarding" => {
             let app = app_handle.clone();
             let _ = app_handle.run_on_main_thread(move || {
+                let dev_mode = SettingsStore::get(&app)
+                    .unwrap_or_default()
+                    .unwrap_or_default()
+                    .dev_mode;
+                let rob_mode = option_env!("ROB_MODE") == Some("1")
+                    || std::env::var("ROB_MODE").map(|v| v == "1").unwrap_or(false);
+                if rob_mode || dev_mode {
+                    let _ = ShowRewindWindow::Home { page: None }.show(&app);
+                    return;
+                }
+
                 // Reset onboarding state so it shows even if previously completed
                 let _ = OnboardingStore::update(&app, |onboarding| {
                     onboarding.reset();

@@ -569,6 +569,7 @@ async fn main() {
                 permissions::check_screen_recording_permission,
                 permissions::check_accessibility_permission_cmd,
                 permissions::check_arc_installed,
+                permissions::check_coreaudio_process_tap_available,
                 permissions::check_arc_automation_permission,
                 permissions::request_arc_automation_permission,
                 permissions::get_installed_browsers,
@@ -857,6 +858,7 @@ async fn main() {
             permissions::reset_and_request_permission,
             permissions::get_missing_permissions,
             permissions::check_arc_installed,
+            permissions::check_coreaudio_process_tap_available,
             permissions::check_arc_automation_permission,
             permissions::request_arc_automation_permission,
             set_tray_unhealth_icon,
@@ -1327,18 +1329,26 @@ async fn main() {
             // ROB_MODE: mark onboarding complete on first launch so we skip
             // login + permissions wizard. Permissions still requested lazily
             // by the features that need them (screen record, mic, etc.).
-            let rob_mode = option_env!("ROB_MODE") == Some("1");
-            let is_completed = if rob_mode && !onboarding_store.is_completed {
+            // dev_mode: also bypass onboarding while enabled.
+            let rob_mode = option_env!("ROB_MODE") == Some("1")
+                || std::env::var("ROB_MODE").map(|v| v == "1").unwrap_or(false);
+            let dev_mode = store.dev_mode;
+            let onboarding_completed = if rob_mode {
                 if let Err(e) = store::OnboardingStore::update(&app.handle(), |o| o.complete()) {
                     warn!("ROB_MODE: failed to mark onboarding completed: {}", e);
-                    false
                 } else {
                     info!("ROB_MODE: onboarding marked completed");
-                    true
                 }
+                true
+            } else if dev_mode {
+                info!("dev_mode: onboarding disabled");
+                true
             } else {
                 onboarding_store.is_completed
             };
+
+            // Keep local startup checks in sync with ROB_MODE onboarding bypass.
+            let is_completed = onboarding_completed;
 
             // Show onboarding window if not completed
             if !is_completed {
@@ -1356,7 +1366,7 @@ async fn main() {
             // macOS-only: on Windows/Linux the non-macOS chat builder doesn't
             // set .visible(false), causing a visible chat window on startup.
             #[cfg(target_os = "macos")]
-            if onboarding_store.is_completed {
+            if onboarding_completed {
                 let app_handle_chat = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
                     // Wait for main window to finish setup
@@ -1381,7 +1391,7 @@ async fn main() {
 
             // Show shortcut reminder overlay on app startup if enabled AND onboarding is completed
             // Don't show reminder during first-time onboarding to reduce overwhelm
-            if store.show_shortcut_overlay && onboarding_store.is_completed {
+            if store.show_shortcut_overlay && onboarding_completed {
                 let shortcut = store.show_screenpipe_shortcut.clone();
                 let app_handle_reminder = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
@@ -1405,7 +1415,7 @@ async fn main() {
             // Uses retry loop because CGPreflightScreenCaptureAccess can return false
             // transiently on startup before TCC fully initializes.
             #[cfg(target_os = "macos")]
-            if onboarding_store.is_completed {
+            if onboarding_completed {
                 let mut screen_ok = false;
                 let mut mic_ok = false;
                 for attempt in 0..3 {
@@ -1487,6 +1497,27 @@ async fn main() {
                             .expect("Failed to create server runtime");
 
                         server_runtime.block_on(async move {
+                            // Resolve + seed the shared api_auth_key cache before building
+                            // the config. `to_recording_config` is sync and reads the
+                            // cache; without this step the server would start with
+                            // `api_auth_key = None` on the app-auto-start path and every
+                            // request would 403. Mirrors the path in `spawn_screenpipe`.
+                            if store_clone.recording.api_auth {
+                                let settings_key_opt = if store_clone.recording.api_key.is_empty() {
+                                    None
+                                } else {
+                                    Some(store_clone.recording.api_key.clone())
+                                };
+                                match screenpipe_engine::auth_key::resolve_api_auth_key(
+                                    &data_dir_clone,
+                                    settings_key_opt.as_deref(),
+                                )
+                                .await
+                                {
+                                    Ok(key) => crate::store::seed_api_auth_key(key),
+                                    Err(e) => tracing::error!("failed to resolve api auth key: {}", e),
+                                }
+                            }
                             let config = store_clone.to_recording_config(data_dir_clone.clone());
 
                             // Check if server already running

@@ -23,7 +23,7 @@ use screenpipe_screen::snapshot_writer::SnapshotWriter;
 use screenpipe_screen::utils::capture_monitor_image;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use tokio::sync::{broadcast, watch};
 use tracing::{debug, error, info, warn};
@@ -789,6 +789,54 @@ fn resolve_capture_metadata(
     (app_name, window_name, browser_url)
 }
 
+/// Rate-limit OCR-heavy apps. Two groups:
+///
+/// **Terminals** (wezterm/alacritty/…): bypass accessibility entirely and
+/// always run Vision OCR (~300ms/frame). Typing-pause triggers fire every
+/// few seconds, so cap at 1/30s.
+///
+/// **Electron document editors** (Obsidian today): AX tree often comes back
+/// empty or thin, forcing OCR on a fullscreen editor. Every capture hits
+/// ~150% CPU for a frame of mostly-useless OCR (gutter line numbers + tab
+/// bar). Same 30s cap keeps the app visible in the timeline while cutting
+/// CPU ~30× — still captures ~2 frames/min of what the user is writing.
+/// See issue #3002.
+///
+/// Returns `true` if this capture should be skipped (too recent).
+fn terminal_ocr_throttled(app_name: &str) -> bool {
+    const INTERVAL: Duration = Duration::from_secs(30);
+    let n = app_name.to_lowercase();
+    // Mirror the app_prefers_ocr list in paired_capture.rs: terminals whose
+    // AX tree is raw buffer / window chrome and OCR is the only useful source.
+    let is_ocr_only = n.contains("wezterm")
+        || n.contains("alacritty")
+        || n.contains("kitty")
+        || n.contains("hyper")
+        || n.contains("warp");
+    // Electron editors whose AX tree is frequently empty/thin. OCR would run
+    // as a fallback on every capture otherwise — prohibitively expensive on a
+    // fullscreen Obsidian editor.
+    let is_electron_editor = n == "obsidian";
+    if !is_ocr_only && !is_electron_editor {
+        return false;
+    }
+
+    static LAST_CAPTURE: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
+    let map = LAST_CAPTURE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut guard = match map.lock() {
+        Ok(g) => g,
+        // Poisoned mutex: don't block captures, just allow this one
+        Err(_) => return false,
+    };
+    let now = Instant::now();
+    match guard.get(&n) {
+        Some(&last) if now.duration_since(last) < INTERVAL => true,
+        _ => {
+            guard.insert(n, now);
+            false
+        }
+    }
+}
 /// Perform a single event-driven capture.
 ///
 /// When `previous_content_hash` is `Some` and matches the current accessibility
@@ -1098,13 +1146,75 @@ async fn do_capture(
     })
 }
 
-/// Cheaply get the focused app name via AX APIs without walking the tree.
-/// Used to apply the walk budget to non-AppSwitch triggers (visual change,
-/// idle, manual) so that expensive apps like Chrome get throttled even
-/// when the capture wasn't triggered by an app switch.
+/// Cheaply get the focused app name. Used to tag captures and to apply
+/// per-app throttles (walk budget, terminal OCR, Obsidian OCR).
+///
+/// Tries NSWorkspace first: filters `running_apps()` to the one with
+/// `is_active() == true`. This is authoritative at the AppKit level and
+/// works for Electron apps (Obsidian, Discord, …) where the AX sys-wide
+/// query returns empty — see issue #3002. Falls back to AX only for
+/// edge cases where NSWorkspace reports no active app (space
+/// transitions, post-login).
+///
+/// **Caching**: `running_apps()` allocates an NSArray of every process
+/// (50–200 entries on a typical mac) and the iteration plus `is_active()`
+/// check costs a few ms. Capture triggers fire on every click / typing
+/// pause / visual change — paying that cost on every trigger is wasteful
+/// when the frontmost app rarely changes between triggers. A 1-second
+/// TTL keeps staleness bounded to something no human perceives while
+/// collapsing the common case to a single atomic load.
 #[cfg(target_os = "macos")]
 fn get_focused_app_name_lightweight() -> Option<String> {
-    use cidre::{ax, ns};
+    use arc_swap::ArcSwap;
+    use std::sync::OnceLock;
+    use std::time::{Duration, Instant};
+
+    const CACHE_TTL: Duration = Duration::from_secs(1);
+
+    // (name, captured_at). ArcSwap gives lock-free reads; in the common
+    // case the whole function is one atomic load + a clock read + clone.
+    static CACHE: OnceLock<ArcSwap<(Option<String>, Instant)>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| {
+        ArcSwap::from_pointee((None, Instant::now() - CACHE_TTL - Duration::from_secs(1)))
+    });
+
+    let now = Instant::now();
+    {
+        let snap = cache.load();
+        if now.duration_since(snap.1) < CACHE_TTL {
+            return snap.0.clone();
+        }
+    }
+
+    let fresh = query_frontmost_app_name_uncached();
+    cache.store(std::sync::Arc::new((fresh.clone(), now)));
+    fresh
+}
+
+#[cfg(target_os = "macos")]
+fn query_frontmost_app_name_uncached() -> Option<String> {
+    use cidre::{ax, ns, objc};
+
+    // Wrapped in an autorelease pool because `running_apps()` returns
+    // autoreleased NSRunningApplication objects; without draining they
+    // leak across polls (same precedent as get_frontmost_pid in
+    // screenpipe-screen).
+    let from_ns = objc::ar_pool(|| {
+        let workspace = ns::Workspace::shared();
+        let apps = workspace.running_apps();
+        for app in apps.iter() {
+            if app.is_active() {
+                return app.localized_name().map(|s| s.to_string());
+            }
+        }
+        None
+    });
+    if from_ns.as_deref().is_some_and(|n| !n.is_empty()) {
+        return from_ns;
+    }
+
+    // AX fallback — the pre-#3002 path. Kept for the edge cases where
+    // NSWorkspace itself reports no active app.
     let sys = ax::UiElement::sys_wide();
     let app = sys.focused_app().ok()?;
     let pid = app.pid().ok()?;
